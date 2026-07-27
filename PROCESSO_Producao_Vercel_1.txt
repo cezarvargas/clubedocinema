@@ -1,0 +1,271 @@
+========================================================================
+ PROCESSO: Deploy e Produção do App na Vercel
+ Documento 1 - Status e Configuração Atual
+========================================================================
+
+RESUMO EXECUTIVO
+================
+App está ✅ EM PRODUÇÃO na Vercel desde julho/2026.
+URL: https://clube-cinema-app.vercel.app
+Todos os fluxos testados e operacionais (login, busca, cadastro, avaliação,
+compartilhamento WhatsApp, planilha navegável).
+
+
+========================================================================
+1. DEPLOYMENT NA VERCEL
+========================================================================
+
+URL de Produção:
+  https://clube-cinema-app.vercel.app
+
+Repositório GitHub:
+  https://github.com/cezarvargas/clube-cinema-app
+
+Como funciona:
+  - Código está no GitHub (branch: main)
+  - Vercel monitora GitHub
+  - Cada `git push` → Vercel detecta → build automático → deploy
+
+Histórico de Deployments:
+  Acessível em: Dashboard Vercel → Deployments
+
+
+========================================================================
+2. VARIÁVEIS DE AMBIENTE
+========================================================================
+
+Configuradas em: Vercel Dashboard → Settings → Environment Variables
+Ambientes: Produção e Pré-visualização
+
+Variáveis (5 no total):
+
+  1. OMDB_API_KEY
+     Valor: 5d35ff85
+     Fonte: https://www.omdbapi.com/apikey.aspx
+     Uso: Busca exata de filmes/séries
+
+  2. TMDB_API_KEY
+     Valor: 3cc4fa0abe696f59de02fd922e2a24f0
+     Fonte: https://www.themoviedb.org/settings/api
+     Uso: Busca fuzzy (tolera erros) de filmes/séries
+
+  3. DROPBOX_APP_KEY
+     Valor: ym36yayzcaneiqk
+     Tipo: Client ID do app Dropbox "ClubeDoCinema2"
+     Fonte: https://www.dropbox.com/developers/apps
+
+  4. DROPBOX_APP_SECRET
+     Valor: hz344iow0uijox8
+     Tipo: Client Secret do app Dropbox "ClubeDoCinema2"
+     Fonte: https://www.dropbox.com/developers/apps
+
+  5. DROPBOX_REFRESH_TOKEN
+     Valor: BPn1leLGcfoAAAAAAAAAAcAArzPpnRscItVmtuM7XYFzpF-24g-5QlElr38uTA7_
+     Tipo: Token permanente (não expira)
+     Gerado via: Script dropbox-auth.bat (fluxo OAuth2)
+     Válida: files.content.read, files.content.write, files.metadata.read
+
+
+========================================================================
+3. AUTENTICAÇÃO DROPBOX - HISTÓRICO E SOLUÇÃO
+========================================================================
+
+Problema Inicial:
+  - App original criado com tipo "Acesso limitado", chave: autexfxe12rb2033
+  - SDK "dropbox" (npm) dava erro "this.fetch is not a function" no Next.js
+  - Token de curta duração (4h) expirava constantemente
+
+Solução Implementada:
+  1. Trocou SDK por API HTTP nativa do Dropbox (fetch do Node 18+)
+  2. Criou novo app Dropbox "ClubeDoCinema2" (chave: ym36yayzcaneiqk)
+  3. Configurou permissões corretas (files.content.read/write, metadata.read)
+  4. Gerou refresh_token permanente via OAuth2 (não expira)
+
+Estado Atual:
+  ✅ Comunicação com Dropbox estável
+  ✅ Refresh token válido e funcionando
+  ✅ Sem necessidade de renovação manual
+  ✅ Token renova automaticamente quando expira (via dropboxClient.js)
+
+
+========================================================================
+4. CAMINHO DA PLANILHA NO DROPBOX
+========================================================================
+
+Localização:
+  /Apps/ClubeDoCinema2/Clube_do_Cinema_com_IMDb.xlsx
+
+Acesso:
+  - Leitura: ✅ Ativada
+  - Escrita: ✅ Ativada
+  - Aba "Clube cinema": dados principais (existe)
+  - Aba "Log": histórico de notas (criada automaticamente pelo app)
+
+Para mudar o caminho:
+  1. Mova o arquivo no Dropbox pra novo local
+  2. Edite `lib/dropboxClient.js` (procure pelo caminho acima)
+  3. Substitua pela nova localização
+  4. Commit e push: `git push` → Vercel faz deploy automaticamente
+
+
+========================================================================
+5. FAZER DEPLOY (GIT → VERCEL)
+========================================================================
+
+Workflow Padrão:
+  $ cd C:\Scripts\clube-cinema-app
+  $ git add .
+  $ git commit -m "sua mensagem"
+  $ git push
+  → Vercel detecta automaticamente
+  → Build acontece (alguns minutos)
+  → Deploy ao vivo
+
+Verificar Status:
+  1. Vercel Dashboard → Deployments
+  2. Ou na URL após alguns minutos
+
+Logs de Build (se falhar):
+  Vercel Dashboard → Deployments → clique no deployment → "Build Logs"
+
+
+========================================================================
+6. RODAR LOCALMENTE (Desenvolvimento)
+========================================================================
+
+Setup:
+  $ npm install
+  $ cp .env.local.example .env.local
+  (Editar .env.local com as mesmas variáveis da Vercel)
+  $ npm run dev
+
+Acesso:
+  http://localhost:3000
+
+Alterações Locais:
+  - Arquivo é salvo → Next.js recarrega automaticamente (hot reload)
+  - Testa localmente antes de fazer git push
+
+
+========================================================================
+7. MONITORAMENTO E DIAGNÓSTICO
+========================================================================
+
+Status da API:
+  GET http://localhost:3000/api/people (local)
+  GET https://clube-cinema-app.vercel.app/api/people (produção)
+  → Retorna lista de nomes se está funcionando
+
+Logs de Erro Comuns:
+
+  "Dropbox: falha ao renovar o token (400): invalid_grant"
+    → Refresh token inválido/expirado
+    → Solução: Gerar novo refresh_token (dropbox-auth.bat)
+
+  "path/not_found"
+    → Caminho da planilha no Dropbox não encontrado
+    → Solução: Verificar se arquivo existe no Dropbox (caminho correto)
+
+  "Vercel: Build failed"
+    → Erro na compilação
+    → Solução: Verificar Build Logs na dashboard Vercel
+
+
+========================================================================
+8. SEGURANÇA
+========================================================================
+
+Boas Práticas Implementadas:
+
+  ✅ .env.local no .gitignore (nunca commita credenciais)
+  ✅ Variáveis de ambiente em Vercel (isoladas por projeto)
+  ✅ Dropbox: acesso restrito à pasta do app
+  ✅ Permissões granulares (não usa "full access")
+  ✅ Refresh token permanente (mais seguro que token curto)
+  ✅ Validação nunca "chuta" entre títulos ambíguos
+
+Considerações Futuras (Opcional):
+  - Cache de token em Upstash Redis (melhora performance em serverless)
+  - 2FA na conta Vercel (recomendado)
+
+
+========================================================================
+9. PRÓXIMAS MELHORIAS (Backlog)
+========================================================================
+
+Implementadas:
+  ✅ Deploy na Vercel
+  ✅ Refresh token permanente do Dropbox
+  ✅ Todas as telas testadas visualmente
+  ✅ Bug: "corrigido de" aparecia sem correção real (CORRIGIDO)
+
+Não implementadas (opcionals):
+  - [ ] Paginação/scroll infinito na planilha (hoje carrega 2000+ títulos)
+  - [ ] Cache de token em Upstash Redis
+  - [ ] Analytics/monitoramento (Vercel Analytics)
+  - [ ] Rate limiting na API (proteção contra abuso)
+
+
+========================================================================
+10. CONTATOS E REFERÊNCIAS
+========================================================================
+
+Documentos Relacionados:
+  - PROCESSO_App_Clube_Cinema_1.txt (visão geral do projeto)
+  - PROCESSO_Verificacao_IMDb_1/2/3.txt (script batch verificar_imdb.py)
+  - README.md (documentação técnica no repo)
+
+Links Úteis:
+  - Vercel Dashboard: https://vercel.com/dashboard
+  - GitHub Repo: https://github.com/cezarvargas/clube-cinema-app
+  - Dropbox App Console: https://www.dropbox.com/developers/apps
+  - App em Produção: https://clube-cinema-app.vercel.app
+
+Emails/Contas:
+  - GitHub: cezarvargas
+  - Vercel: (conecta via GitHub)
+  - Dropbox: cezar.vargas@gmail.com
+
+
+========================================================================
+11. CHECKLIST DE TROUBLESHOOTING
+========================================================================
+
+Se o app não carregar a lista de pessoas:
+
+  ☐ Verificar variáveis de ambiente na Vercel (Settings → Environment Variables)
+  ☐ Testar localmente: npm run dev → http://localhost:3000
+  ☐ Se local funciona, problema é na Vercel:
+    - Redeploy: Deployments → ⋯ → Redeploy
+  ☐ Se local não funciona:
+    - Verificar .env.local (todos os 5 valores presentes?)
+    - Verificar arquivo no Dropbox (existe? permissões?)
+    - Testar API direto: curl http://localhost:3000/api/people
+  ☐ Logs: Vercel Dashboard → Deployments → Build Logs
+
+Se o refresh_token expirar:
+
+  ☐ Rodar: dropbox-auth.bat (no terminal, Windows)
+  ☐ Autorizar no Dropbox (clique "Permitir")
+  ☐ Copiar código gerado
+  ☐ Cola no script e roda
+  ☐ Copiar refresh_token da resposta JSON
+  ☐ Atualizar na Vercel: Settings → Environment Variables → DROPBOX_REFRESH_TOKEN
+  ☐ Redeploy: Deployments → Redeploy
+
+
+========================================================================
+STATUS FINAL
+========================================================================
+
+✅ App operacional e em produção
+✅ Todas as rotas testadas
+✅ Autenticação Dropbox estável
+✅ Documentação atualizada
+✅ Deploy automático via Git ativo
+
+Data de Conclusão: Julho 2026
+Versão: 1.0 (Produção)
+Próxima Revisão: Quando houver mudanças significativas
+
+========================================================================
