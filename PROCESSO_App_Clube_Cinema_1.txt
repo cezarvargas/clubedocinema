@@ -1,0 +1,294 @@
+========================================================================
+ PROCESSO: App do Clube do Cinema (substitui a edição manual da planilha)
+ Documento 1 - gerado para retomar o projeto em uma nova conversa
+========================================================================
+Este documento resume tudo que foi decidido e construído numa conversa
+muito longa (mockup + implementação real do backend e frontend). Leia
+também os documentos PROCESSO_Verificacao_IMDb_1/2/3.txt, que descrevem
+o script separado verificar_imdb.py (batch, periódico) - o app e o
+script são complementares, não substituem um ao outro por completo.
+
+------------------------------------------------------------------------
+1. OBJETIVO DO APP
+------------------------------------------------------------------------
+Substituir o fluxo manual (pessoas mandam nome+nota no grupo do WhatsApp,
+alguém digita na planilha) por um app web que:
+  - Deixa cada pessoa cadastrar/avaliar filme ou série direto
+  - Valida título novo contra IMDb (via OMDb) e TMDb, sem nunca bloquear
+    o cadastro
+  - Gera a mensagem pronta pro WhatsApp (wa.me), no formato já validado
+  - Mostra a planilha completa navegável (substitui os 3 PDFs que o
+    verificar_imdb.py gerava)
+  - Mostra "Últimos lançamentos" (últimas notas dadas por qualquer
+    pessoa), lendo de uma aba de log dedicada (a planilha não tinha
+    coluna de data/hora)
+
+------------------------------------------------------------------------
+2. ARQUITETURA E DECISÕES JÁ TOMADAS
+------------------------------------------------------------------------
+- Stack: Next.js 16 (App Router) + React 19, hospedagem prevista na
+  Vercel (ainda não publicado - só rodando local via `npm run dev`)
+- Planilha: lida/escrita via API HTTP do Dropbox diretamente (NÃO usa o
+  SDK oficial "dropbox" do npm - motivo na seção 5)
+- Leitura/escrita do Excel: biblioteca `exceljs`
+- Login: dinâmico, lido da linha 1 da planilha (colunas entre "Onde ver"
+  e "Total pontos") - nunca fixa nomes no código, se adaptar sozinho se
+  o clube crescer/diminuir
+- Validação de título novo: tenta OMDb (exato) -> tenta TMDb (tolera erro
+  leve de digitação/ano, só se resultado ÚNICO ou empate resolvido por
+  ano) -> se nada bater, salva mesmo assim, SEM link, nome preto/negrito
+  ("não confirmado") - nunca bloqueia o cadastro
+  - Regra de segurança: nunca "chuta" entre múltiplos títulos homônimos
+    ambíguos (testado ao vivo com "O Segredo", "Pássaro Branco" etc)
+- Tipo pra buscar nas APIs: F/FD -> movie (OMDb) / search/movie (TMDb);
+  S/MS -> series (OMDb) / search/tv (TMDb) - OMDb/TMDb não distinguem
+  documentário nem minissérie
+- Duplicata: mesmo Nome (normalizado, ignora acento/caixa) + mesmo Ano +
+  mesmo Tipo -> recusa cadastro, mostra o título existente
+- Próximo Número = MAX(coluna A) + 1
+- R (Total pontos) e S (Total Votos): sempre preenchidos/recalculados
+  pelo app a cada cadastro/nota
+- T (Média Pond.): só criada a partir de 2+ votos (0-1 voto fica sem
+  fórmula/vazia, mesma regra do projeto original) - fórmula com peso por
+  faixa de votos (0,55 a 1,00) + âncora (média geral do clube)
+- U (Nota IMDb): só preenchida quando confirmado (OMDb ou TMDb)
+- Se uma nota nova confirma retroativamente um título que estava
+  pendente, a linha inteira é atualizada (nome corrigido, link, nota
+  IMDb) - mas a mensagem do WhatsApp NÃO sinaliza isso, fica igual
+  "(Existente)" normal
+- "Onde viu": sempre como a pessoa digitou, nunca vem de API nenhuma
+- Mensagem do WhatsApp (formato final, testado):
+    "{Pessoa}: #{Número} - {Título} - {Tipo} - {Ano} - {Nota} (Existente|Novo|Novo - não confirmado)"
+  e, quando corrigido via TMDb, acrescenta:
+    ' [corrigido de: "{nome digitado}" - {ano digitado}]'
+- Tela "Ver planilha completa": busca + filtro por tipo (Todos/Filmes/
+  Séries) + ordenação (Nome padrão / Nota IMDb / Média Pond. - a média é
+  a fórmula ponderada de verdade, calculada em JS, não a simples) -
+  clicando em "Todos" sempre reseta a ordenação pra Nome
+  - Quando ordenado por "Nota IMDb": número grande = nota IMDb, linha
+    pequena mostra "média pond. X" como bônus
+  - Quando ordenado por "Média Pond." ou "Nome": número grande = Média
+    Pond., linha pequena mostra "IMDb X" como bônus (se tiver)
+  - Cada título confirmado tem link clicável pro IMDb; toque no item
+    expande e mostra a nota de cada pessoa
+- Tela inicial "Últimos lançamentos": mostra as ÚLTIMAS 10 notas dadas
+  (não só cadastros novos) - qualquer pessoa avaliando qualquer título,
+  novo ou antigo. "(N)" ao lado do nome = essa nota também cadastrou o
+  título (é a primeira vez dele no clube). Cada item tem link IMDb (se
+  confirmado) e expande ao tocar, mostrando a nota de todo mundo.
+  - Fonte dessa lista: aba "Log" nova na planilha (ver seção 4)
+
+------------------------------------------------------------------------
+3. ESTRUTURA DE ARQUIVOS DO PROJETO (Next.js)
+------------------------------------------------------------------------
+clube-cinema-app/
+├── package.json          (next ^16.2.12, react ^19.2.0, exceljs 4.4.0
+│                           - node-fetch e dropbox SDK foram REMOVIDOS,
+│                           usa fetch nativo do Node 18+)
+├── .env.local.example    (variáveis: OMDB_API_KEY, TMDB_API_KEY,
+│                           DROPBOX_APP_KEY, DROPBOX_APP_SECRET,
+│                           DROPBOX_REFRESH_TOKEN)
+├── scripts/
+│   └── get-dropbox-refresh-token.js   (rodar 1x pra gerar o refresh
+│         token - ver seção 5, EM ANDAMENTO no momento em que essa
+│         conversa foi pausada)
+├── app/
+│   ├── layout.js
+│   ├── globals.css       (visual extraído do mockup validado - tema
+│   │                       escuro, dourado/bordô, mas responsivo de
+│   │                       verdade, não preso numa "moldura de celular"
+│   │                       fixa como o mockup)
+│   ├── page.js           (TODAS as telas num componente React só:
+│   │                       Login, Home, Search "O que você viu?",
+│   │                       Rate (avaliar existente), New (cadastrar
+│   │                       novo, com os 3 estágios: validating/
+│   │                       duplicate/unconfirmed), Confirm (com botão
+│   │                       wa.me), Sheet (planilha completa))
+│   └── api/
+│       ├── people/route.js    GET  - lista de nomes (login)
+│       ├── search/route.js    GET  - busca título existente
+│       ├── sheet/route.js     GET  - planilha completa (busca/filtro/sort)
+│       ├── recent/route.js    GET  - "últimos lançamentos" (lê aba Log)
+│       ├── register/route.js  POST - cadastra filme/série novo
+│       └── rate/route.js      POST - avalia título existente
+└── lib/
+    ├── sheet.js          núcleo: ler/escrever a planilha real + aba Log
+    │                       (detectColumns, loadSheet, addNewTitle,
+    │                       rateExisting, appendLog, getRecentLog,
+    │                       parseDataHora, formatDataHoraAgora, etc)
+    ├── actions.js        lógica de cada operação (peopleAction,
+    │                       searchAction, registerAction, rateAction,
+    │                       browseAction, recentAction) - é a camada
+    │                       testável, sem depender de Dropbox/Next
+    ├── whatsappMessage.js monta a mensagem final
+    ├── omdb.js           API do OMDb (usa fetch nativo)
+    ├── tmdb.js           API do TMDb (usa fetch nativo)
+    ├── matchTitle.js     junta OMDb + TMDb + regra "nunca chutar"
+    ├── withSheet.js      conecta actions.js ao Dropbox (load/save)
+    └── dropboxClient.js  fala DIRETO com a API HTTP do Dropbox (não usa
+                            o SDK oficial - ver seção 5), autentica via
+                            refresh token
+
+------------------------------------------------------------------------
+4. ABA NOVA NA PLANILHA: "Log" (pra "Últimos lançamentos" funcionar)
+------------------------------------------------------------------------
+A planilha original não tem NENHUMA coluna de data/hora, então não tinha
+como saber quais foram as "últimas" notas dadas. Solução: uma aba nova,
+"Log", criada AUTOMATICAMENTE pelo app na primeira vez que precisar (se
+não existir) - nunca mexe na aba "Clube cinema".
+
+Colunas (só 4, simplificado a pedido do usuário - título/tipo/ano/nota
+são buscados ao vivo na aba principal via Número, pra não duplicar
+dado):
+  DataHora | Pessoa | Numero | Status
+
+Formato da DataHora esperado: "AAAA-MM-DD HH:MM" (ex: "2026-07-26 17:30")
+- também aceita o Excel converter sozinho pra data "de verdade" (o
+  parseDataHora() do sheet.js trata os dois casos). Ordena pela DATA de
+  verdade (não pela posição física da linha), com desempate pela linha
+  (mais embaixo = mais recente) em caso de empate no mesmo minuto.
+
+Se o usuário for popular manualmente linhas de histórico antigo na aba
+Log, o formato de cada linha é: DataHora | Pessoa (nome exato) | Numero
+(o Número real do filme na aba Clube cinema) | Status ("Existente" ou
+"Novo" - "Novo" é o que ativa o "(N)" na tela).
+
+------------------------------------------------------------------------
+5. AUTENTICAÇÃO COM O DROPBOX - PROBLEMA EM ABERTO (no meio da solução)
+------------------------------------------------------------------------
+HISTÓRICO DO PROBLEMA:
+- App originalmente criado no Dropbox como tipo "Acesso limitado (Novo)"
+  ("Scoped access"), pasta do aplicativo, chave "autexfxe12rb2033"
+- SDK oficial "dropbox" (npm) dava erro "this.fetch is not a function"
+  dentro do Next.js -> RESOLVIDO trocando pra falar direto com a API
+  HTTP do Dropbox via fetch nativo (funciona bem, testado)
+- Token de curta duração (gerado pelo botão "Gerar" no console) funciona
+  pra baixar/subir a planilha, mas expira em ~4h - fica pedindo pra
+  regenerar manualmente toda hora, inviável pro clube inteiro usar
+- Tentativa de configurar REFRESH TOKEN (permanente) via fluxo OAuth
+  (/oauth2/authorize): deu erro "Invalid client_id" repetidamente, tanto
+  numa URL montada na mão quanto por um script Node
+- Pesquisa aprofundada (via Research) concluiu: NÃO é um bug generalizado
+  da plataforma nem do tipo de app - é quase sempre causado por
+  redirect_uri não bater exatamente, parâmetro extra/errado, ou escopo
+  não habilitado. Recomendação: testar com a URL MÍNIMA (sem
+  redirect_uri, sem scope) - o Dropbox mostra o código na tela pra
+  copiar manualmente, sem precisar de servidor local
+- MESMO com a URL mínima, o app ANTIGO (autexfxe12rb2033) continuou
+  dando "Invalid client_id" - descartando erro de URL
+- TESTE DECISIVO: criado um app NOVO do zero (nome "ClubeDoCinema2",
+  chave "ym36yayzcaneiqk", segredo "hz344iow0uijox8") e testada a MESMA
+  URL mínima nele -> FUNCIONOU (mostrou a tela de autorizar, e depois o
+  código de autorização na tela). CONCLUSÃO: o problema era ESPECÍFICO
+  do app antigo (talvez corrompido/mal configurado na criação), não um
+  bug da plataforma nem do tipo "Acesso limitado".
+
+ESTADO EXATO EM QUE FICOU (precisa retomar daqui):
+- App novo "ClubeDoCinema2" criado, chave e segredo conhecidos (acima)
+- PENDENTE: nunca terminamos de configurar as PERMISSÕES desse app novo
+  (files.content.read, files.content.write, files.metadata.read) - sem
+  isso, o token não vai servir pra nada, mesmo que a troca por refresh
+  token funcione
+- Conseguimos gerar um código de autorização válido pra esse app novo
+  pelo menos 2 vezes, mas ambos EXPIRARAM antes de completar a troca por
+  token (o código de autorização do Dropbox expira em poucos minutos, e
+  precisa ser trocado rápido, sem pausa longa/prints no meio)
+- O comando de troca (ajustar o "code" a cada tentativa nova):
+    curl -X POST https://api.dropboxapi.com/oauth2/token -d code=CODIGO_AQUI -d grant_type=authorization_code -d client_id=ym36yayzcaneiqk -d client_secret=hz344iow0uijox8
+- URL de autorização (mínima, testada e funcionando nesse app novo):
+    https://www.dropbox.com/oauth2/authorize?client_id=ym36yayzcaneiqk&response_type=code&token_access_type=offline
+
+PRÓXIMOS PASSOS PRA RESOLVER (nessa ordem):
+  1. Configurar as permissões do app novo (aba Permissões: marcar
+     files.content.read, files.content.write, files.metadata.read,
+     clicar Submit) - AINDA NÃO FEITO
+  2. Repetir o fluxo de autorização (abrir a URL, Permitir, copiar o
+     código) e IMEDIATAMENTE rodar o curl de troca (sem demora/prints no
+     meio, pra não expirar de novo)
+  3. Da resposta JSON, pegar o campo "refresh_token" e colocar no
+     .env.local:
+       DROPBOX_APP_KEY=ym36yayzcaneiqk
+       DROPBOX_APP_SECRET=hz344iow0uijox8
+       DROPBOX_REFRESH_TOKEN=<o que vier na resposta>
+  4. Colocar a planilha real dentro da pasta do app NOVO no Dropbox
+     (Apps/ClubeDoCinema2/Clube_do_Cinema_com_IMDb.xlsx) - o app antigo
+     tinha a planilha em Apps/ClubeDoCinema/, o app novo usa outra pasta
+  5. Ajustar lib/dropboxClient.js se o caminho/nome do arquivo mudar
+  6. Reiniciar o servidor (`npm run dev`) e testar /api/people de novo
+
+OUTRA CONSIDERAÇÃO (levantada pela pesquisa, ainda não implementada):
+  Na Vercel (ambiente serverless/sem estado), o cache em memória do
+  access token (dentro de dropboxClient.js) não persiste de forma
+  garantida entre chamadas - cada uma pode cair num servidor diferente.
+  Isso NÃO quebra nada (só renova o token com mais frequência que o
+  estritamente necessário), aceitável no volume de uso do clube (13
+  pessoas). Se quiser polir depois: usar Upstash Redis / Vercel KV
+  (grátis no volume necessário) pra cachear o token entre chamadas.
+
+------------------------------------------------------------------------
+6. BUGS ENCONTRADOS E CORRIGIDOS (documentados pra não reaparecer)
+------------------------------------------------------------------------
+- Cálculo do próximo Número ficava desatualizado se dois cadastros
+  acontecessem em sequência sem recarregar a planilha (sheet.rows era um
+  "retrato" que não se atualizava sozinho) -> corrigido: addNewTitle/
+  rateExisting agora atualizam esse retrato em memória também
+- Referência da célula-âncora da Média Ponderada apontava pra coluna
+  errada (U em vez de W - U é a Nota IMDb, W é a âncora de verdade)
+- Regra do TMDb exigia bater o ano pra aceitar, o que quebraria
+  justamente o caso testado ao vivo "Duna Parte 2"/2023 ->
+  "Duna: Parte Dois"/2024 (o ano TAMBÉM estava errado, só que era
+  resultado único) -> corrigido: confia num resultado único mesmo com
+  ano diferente; só exige bater o ano quando há múltiplos candidatos
+  pra desempatar
+- SDK do Dropbox quebrava dentro do Next.js ("this.fetch is not a
+  function") -> resolvido falando direto com a API HTTP do Dropbox
+- Títulos que JÁ tinham link do IMDb (a maioria da planilha real, vindos
+  do verificar_imdb.py) apareciam como "[object Object]" em vez do nome
+  -> corrigido: célula com hyperlink tem formato {text, hyperlink}
+  diferente de célula com texto puro, sheet.js agora trata os dois
+- Upgrade de Next.js 14 -> 16 no meio do processo (14 tinha ~22
+  vulnerabilidades de segurança conhecidas resolvidas só na versão 16;
+  cuidado: NUNCA rodar `npm audit fix --force` sem revisar - isso já
+  rebaixou o Next sozinho pra versão 9 uma vez, quebrando tudo)
+- Vulnerabilidades restantes (exceljs -> archiver -> glob/brace-expansion,
+  e o `sharp` do next/image) foram DELIBERADAMENTE aceitas como risco
+  baixo - o app nunca processa arquivo de terceiro nem usa otimização de
+  imagem, então a superfície de ataque real é mínima
+
+------------------------------------------------------------------------
+7. TESTES JÁ FEITOS
+------------------------------------------------------------------------
+- Toda a lógica de lib/sheet.js e lib/actions.js foi testada com
+  planilha simulada (mock do ExcelJS) ANTES de qualquer coisa ir pro
+  usuário - pego 2 bugs reais nesse processo (seção 6)
+- Rotas testadas com curl/navegador contra o Dropbox REAL (cópia de
+  teste do usuário, não afeta dado real do clube):
+  /api/people, /api/search, /api/sheet, /api/recent - OK
+  /api/register (POST) - testado com "FILME DE TESTE" (não confirmado,
+    salvou mesmo assim) - OK
+  /api/rate (POST) - testado avaliando esse mesmo filme com outra
+    pessoa - OK
+- Tela de login testada visualmente (cores dos avatares por pessoa,
+  bug de cache do Next.js/.next resolvido apagando a pasta .next)
+- Ainda NÃO testado visualmente: as telas de busca, avaliar existente,
+  cadastrar novo, confirmação/WhatsApp, planilha completa (só a lógica
+  de backend por trás delas foi testada via API direta)
+
+------------------------------------------------------------------------
+8. PRÓXIMOS PASSOS EM ABERTO (geral, além do Dropbox na seção 5)
+------------------------------------------------------------------------
+- Resolver o refresh token do Dropbox (seção 5 - EM ANDAMENTO,
+  prioridade máxima pra continuar)
+- Testar visualmente as telas restantes no navegador (busca, avaliar,
+  cadastrar novo, confirmação, planilha completa)
+- Paginação/scroll infinito na tela "Ver planilha completa" (hoje
+  carrega todos os 2000+ títulos filtrados de uma vez só - funciona mas
+  não é ideal em conexão lenta)
+- Publicar de verdade na Vercel (ainda só roda local via `npm run dev`)
+- Considerar cache do token em Upstash/Vercel KV se necessário depois de
+  publicado (ver seção 5)
+- Script verificar_imdb.py: criada uma v2 com otimização (pula busca
+  completa pra filmes que já têm link, só atualiza a nota) - testada e
+  entregue, ainda não confirmado se o usuário já trocou pela versão
+  antiga
+========================================================================
