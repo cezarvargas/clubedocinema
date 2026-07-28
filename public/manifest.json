@@ -1,17 +1,14 @@
 {
   "name": "Clube do Cinema",
   "short_name": "Cinema",
-  "description": "App do Clube do Cinema - avaliação de filmes e séries",
-  "start_url": "/",
   "display": "standalone",
-  "background_color": "#1a1a1a",
-  "theme_color": "#D4AF37",
   "scope": "/",
+  "start_url": "/",
   "icons": [
     {
-      "src": "/favicon.png",
+      "src": "/favicon.jpeg",
       "sizes": "any",
-      "type": "image/png"
+      "type": "image/jpeg"
     }
   ]
 }
