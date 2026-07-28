@@ -1,0 +1,23 @@
+{
+  "name": "Clube do Cinema",
+  "short_name": "Cinema",
+  "description": "App para gestão e avaliação de filmes do Clube do Cinema",
+  "start_url": "/?pwa=v1_clean",  // <--- ALTERE EXATAMENTE PARA ISSO
+  "display": "standalone",
+  "background_color": "#121212",
+  "theme_color": "#800020",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

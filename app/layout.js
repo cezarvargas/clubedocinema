@@ -1,14 +1,6 @@
-import './globals.css';
-
 export const metadata = {
   title: 'Clube do Cinema',
-  description: 'App do Clube do Cinema',
+  description: 'App para gestão e avaliação de filmes do Clube do Cinema',
+  manifest: '/manifest.json',
+  themeColor: '#800020',
 };
-
-export default function RootLayout({ children }) {
-  return (
-    <html lang="pt-BR">
-      <body>{children}</body>
-    </html>
-  );
-}
