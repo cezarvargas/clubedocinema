@@ -469,7 +469,14 @@ function NewScreen({ currentUser, prefill, goTo, onDone }) {
         </div>
         <div className="field">
           <label>ANO</label>
-          <input type="text" placeholder="Ex: 2024" value={ano} onChange={e => setAno(e.target.value)} />
+          <input type="number" placeholder="Ex: 2024" value={ano} onChange={e => {
+            const val = e.target.value;
+            if (val === '') setAno('');
+            else {
+              const num = parseInt(val, 10);
+              if (num >= 1900 && num <= new Date().getFullYear() + 1) setAno(val);
+            }
+          }} min="1900" max={new Date().getFullYear() + 1} />
         </div>
         <div className="field">
           <label>ONDE VIU</label>
