@@ -167,9 +167,9 @@ function HomeScreen({ currentUser, goTo, onSignOut, onPickExisting }) {
                   {r.imdbLink ? (
                     <a className="sheet-title" href={r.imdbLink} target="_blank" rel="noopener"
                        onClick={(e) => e.stopPropagation()}>
-                      {r.titulo}<span className="imdb-icon">↗</span>
+                      {r.nome}<span className="imdb-icon">↗</span>
                     </a>
-                  ) : r.titulo}
+                  ) : r.nome}
                   {r.isNew && <span className="new-tag">(N)</span>}
                 </div>
                 <div className="entry-meta">
