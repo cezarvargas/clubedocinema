@@ -436,11 +436,11 @@
   .person-score .pval{font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--text);}
 
   .sheet-avaliar-btn{
-    background:var(--gold);color:#14100F;border:none;border-radius:6px;
-    padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;
-    transition:.15s;margin-top:8px;grid-column:1/-1;
+    background:#E8752C;color:#fff;border:none;border-radius:6px;
+    padding:4px 8px;font-size:10px;font-weight:700;cursor:pointer;
+    transition:.15s;display:flex;align-items:center;justify-content:center;
   }
-  .sheet-avaliar-btn:hover{background:var(--gold-soft);}
+  .sheet-avaliar-btn:hover{background:#D66A1F;}
 
   .choice-card{
     width:100%;
