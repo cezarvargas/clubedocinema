@@ -32,6 +32,7 @@
   }
   @media (min-width: 540px){
     .app-shell{
+      max-width:700px;
       margin:24px auto;
       border-radius:20px;
       box-shadow:0 20px 50px rgba(0,0,0,0.4);
@@ -88,6 +89,9 @@
     grid-template-columns:1fr 1fr;
     gap:10px;
     margin-top:18px;
+  }
+  @media (min-width: 540px){
+    .name-grid{grid-template-columns:1fr 1fr 1fr 1fr;}
   }
   .name-chip{
     background:var(--surface);
