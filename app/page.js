@@ -391,17 +391,14 @@ function NewScreen({ currentUser, prefill, goTo, onDone }) {
             <h1>✅ Encontramos no IMDb</h1>
           </div>
           <div className="content">
-            <div className="summary-card">
-              <div className="summary-title">{f.nome}</div>
-              <div className="summary-meta"><span className="entry-badge">{typeLabel(f.tipo).toUpperCase()}</span>{f.ano}</div>
-              {f.imdbRating && <div className="summary-meta" style={{ marginTop: 8, fontSize: 13 }}>IMDb: {formatNota(f.imdbRating)}</div>}
-            </div>
-            <div style={{ marginBottom: 16 }}>
-              <a href={`https://www.imdb.com/title/${f.imdbId}/`} target="_blank" rel="noopener"
-                 style={{ color: 'var(--gold)', fontSize: 13, textDecoration: 'none' }}>
-                Ver no IMDb →
-              </a>
-            </div>
+            <a href={`https://www.imdb.com/title/${f.imdbId}/`} target="_blank" rel="noopener"
+               style={{ textDecoration: 'none', color: 'inherit' }}>
+              <div className="summary-card">
+                <div className="summary-title" style={{ cursor: 'pointer' }}>{f.nome}<span style={{ fontSize: '0.7em', marginLeft: 4 }}>↗</span></div>
+                <div className="summary-meta"><span className="entry-badge">{typeLabel(f.tipo).toUpperCase()}</span>{f.ano}</div>
+                {f.imdbRating && <div className="summary-meta" style={{ marginTop: 8, fontSize: 13 }}>IMDb: {formatNota(f.imdbRating)}</div>}
+              </div>
+            </a>
             {errorInfo && <div className="status-banner status-error" style={{ display: 'block' }}>{errorInfo}</div>}
             <button className="cta-primary" onClick={confirmAndSave} disabled={stage === 'confirmando'}>
               {stage === 'confirmando' ? 'Salvando...' : 'Confirmar e salvar'}
