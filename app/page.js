@@ -205,21 +205,42 @@ function HomeScreen({ currentUser, goTo, onSignOut, onPickExisting }) {
 // SEARCH ("O que você viu?")
 // ---------------------------------------------------------------------
 function SearchScreen({ currentUser, goTo, onPickExisting, onNotFound }) {
-  const [query, setQuery] = useState('');
-  const [matches, setMatches] = useState([]);
+  const [nome, setNome] = useState('');
+  const [ano, setAno] = useState('');
+  const [tipo, setTipo] = useState('F');
+  const [imdbMatches, setImdbMatches] = useState([]);
+  const [searching, setSearching] = useState(false);
   const [searched, setSearched] = useState(false);
+  const [error, setError] = useState(null);
 
-  const runSearch = useCallback((q) => {
-    if (!q.trim()) { setMatches([]); setSearched(false); return; }
-    api(`/api/search?q=${encodeURIComponent(q)}&user=${encodeURIComponent(currentUser)}`)
-      .then(({ data }) => { setMatches(data.matches || []); setSearched(true); })
-      .catch(() => { setMatches([]); setSearched(true); });
-  }, [currentUser]);
+  async function verificarNoImdb() {
+    if (!nome.trim() || !ano.trim()) {
+      setError('Preencha nome e ano');
+      return;
+    }
+    setSearching(true);
+    setError(null);
+    try {
+      const { data } = await api('/api/imdb-search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nome, ano: parseInt(ano, 10), tipo }),
+      });
+      setImdbMatches(data.matches || []);
+      setSearched(true);
+    } catch (err) {
+      setError(err.message);
+      setImdbMatches([]);
+      setSearched(true);
+    } finally {
+      setSearching(false);
+    }
+  }
 
-  useEffect(() => {
-    const t = setTimeout(() => runSearch(query), 200); // pequeno debounce
-    return () => clearTimeout(t);
-  }, [query, runSearch]);
+  function irParaCadastro(filme) {
+    // Vai pro cadastro com os dados do filme do IMDb
+    onNotFound(filme.nome);
+  }
 
   return (
     <div className="screen">
@@ -231,67 +252,71 @@ function SearchScreen({ currentUser, goTo, onPickExisting, onNotFound }) {
       <div className="content">
         <div className="field">
           <label>NOME DO FILME OU SÉRIE</label>
-          <div style={{ position: 'relative', display: 'flex', gap: 8 }}>
-            <input
-              type="text"
-              placeholder="Digite o nome..."
-              value={query}
-              onChange={e => setQuery(e.target.value)}
-              onKeyDown={e => {
-                if (e.key === 'Enter' && query.trim()) {
-                  e.preventDefault();
-                  onNotFound(query.trim());
-                }
-              }}
-              style={{ flex: 1 }}
-            />
-            {query.trim() && (
-              <button
-                onClick={() => onNotFound(query.trim())}
-                style={{
-                  background: 'var(--gold)',
-                  color: '#1a1a1a',
-                  border: 'none',
-                  padding: '12px 16px',
-                  borderRadius: 8,
-                  fontSize: 14,
-                  fontWeight: 500,
-                  cursor: 'pointer',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                + Novo
-              </button>
-            )}
+          <input type="text" placeholder="Digite o nome..." value={nome} onChange={e => setNome(e.target.value)} />
+        </div>
+
+        <div className="field">
+          <label>ANO</label>
+          <input type="text" placeholder="Ex: 2024" value={ano} onChange={e => {
+            const val = e.target.value;
+            if (val === '') setAno('');
+            else {
+              const num = parseInt(val, 10);
+              if (num >= 1900 && num <= 2027) setAno(val);
+            }
+          }} maxLength="4" />
+          {ano && (ano.length !== 4 || isNaN(parseInt(ano, 10))) && (
+            <p style={{ color: 'var(--error)', fontSize: 12, marginTop: 6 }}>Ano deve ter 4 dígitos</p>
+          )}
+        </div>
+
+        <div className="field">
+          <label>TIPO</label>
+          <div className="toggle-row">
+            <button className={`toggle-btn${tipo === 'F' ? ' active' : ''}`} onClick={() => setTipo('F')}>Filme<span className="code">F</span></button>
+            <button className={`toggle-btn${tipo === 'FD' ? ' active' : ''}`} onClick={() => setTipo('FD')}>Filme Doc.<span className="code">FD</span></button>
+            <button className={`toggle-btn${tipo === 'S' ? ' active' : ''}`} onClick={() => setTipo('S')}>Série<span className="code">S</span></button>
+            <button className={`toggle-btn${tipo === 'MS' ? ' active' : ''}`} onClick={() => setTipo('MS')}>Minissérie<span className="code">MS</span></button>
           </div>
         </div>
 
-        {matches.length > 0 && (
-          <div style={{ marginBottom: 16 }}>
-            <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 12 }}>Filmes encontrados:</p>
-            {matches.map(m => (
-              <button key={m.rowNumber} className="choice-card" onClick={() => onPickExisting(m)}>
-                <div style={{ width: '100%' }}>
-                  {m.imdbLink ? (
-                    <a href={m.imdbLink} target="_blank" rel="noopener" onClick={(e) => e.stopPropagation()} style={{ color: '#5B9FD9', textDecoration: 'none', fontSize: '14px', fontWeight: '500', marginBottom: '8px', display: 'block' }}>
-                      {m.nome} <span style={{ fontSize: '12px', color: 'var(--muted)' }}>↗</span>
-                    </a>
-                  ) : <div style={{ fontSize: '14px', fontWeight: '500', marginBottom: '8px', color: 'var(--text)' }}>{m.nome}</div>}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span style={{ fontSize: '18px' }}>{m.tipo === 'S' || m.tipo === 'MS' ? '📺' : '🎬'}</span>
-                    <span style={{ fontSize: '13px', color: 'var(--muted)' }}>{typeLabel(m.tipo)} · {m.ano}{m.alreadyRatedByMe ? ' · você já avaliou' : ''}</span>
+        {error && <div className="status-banner status-error" style={{ display: 'block' }}>{error}</div>}
+
+        <button className="cta-primary" onClick={verificarNoImdb} disabled={searching || !nome.trim() || !ano.trim()}>
+          {searching ? 'Verificando...' : 'Verificar no IMDb'}
+        </button>
+
+        {searched && imdbMatches.length > 0 && (
+          <div style={{ marginTop: 20 }}>
+            <p style={{ fontSize: 13, color: 'var(--gold)', marginBottom: 12 }}>✅ Encontramos no IMDb:</p>
+            {imdbMatches.map((m, i) => (
+              <div key={i} className="choice-card" style={{ padding: 12, marginBottom: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <a href={`https://www.imdb.com/title/${m.imdbId}/`} target="_blank" rel="noopener" style={{ color: '#5B9FD9', textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>
+                    {m.nome} <span style={{ fontSize: 11 }}>↗</span>
+                  </a>
+                  <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>
+                    {typeLabel(m.tipo)} · {m.ano}
                   </div>
                 </div>
-              </button>
+                <button className="link-btn" onClick={() => irParaCadastro(m)} style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
+                  Cadastrar este
+                </button>
+              </div>
             ))}
           </div>
         )}
 
-        {searched && matches.length === 0 && (
-          <div>
-            <div className="status-banner status-new" style={{ display: 'block' }}>Não encontramos esse título no clube</div>
-            <button className="cta-primary" onClick={() => onNotFound(query.trim())}>✨ Cadastrar como novo</button>
+        {searched && imdbMatches.length === 0 && (
+          <div style={{ marginTop: 20 }}>
+            <div className="status-banner status-new" style={{ display: 'block' }}>❌ Não encontramos no IMDb</div>
           </div>
+        )}
+
+        {searched && (
+          <button className="link-btn" onClick={() => onNotFound(nome.trim())} style={{ display: 'block', width: '100%', textAlign: 'center', marginTop: 16 }}>
+            Cadastrar como novo
+          </button>
         )}
       </div>
     </div>
