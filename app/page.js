@@ -236,10 +236,16 @@ function SearchScreen({ currentUser, goTo, onPickExisting, onNotFound }) {
 
         {matches.map(m => (
           <button key={m.rowNumber} className="choice-card" onClick={() => onPickExisting(m)}>
-            <div className="choice-icon">{m.tipo === 'S' || m.tipo === 'MS' ? '📺' : '🎬'}</div>
-            <div>
-              <div className="choice-title">{m.nome}</div>
-              <div className="choice-sub">{typeLabel(m.tipo)} · {m.ano}{m.alreadyRatedByMe ? ' · você já avaliou' : ''}</div>
+            <div style={{ width: '100%' }}>
+              {m.imdbLink ? (
+                <a href={m.imdbLink} target="_blank" rel="noopener" onClick={(e) => e.stopPropagation()} style={{ color: 'var(--text)', textDecoration: 'none', fontSize: '14px', fontWeight: '500', marginBottom: '8px', display: 'block' }}>
+                  {m.nome} <span style={{ fontSize: '12px', color: 'var(--muted)' }}>↗</span>
+                </a>
+              ) : <div style={{ fontSize: '14px', fontWeight: '500', marginBottom: '8px' }}>{m.nome}</div>}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ fontSize: '18px' }}>{m.tipo === 'S' || m.tipo === 'MS' ? '📺' : '🎬'}</span>
+                <span style={{ fontSize: '13px', color: 'var(--muted)' }}>{typeLabel(m.tipo)} · {m.ano}{m.alreadyRatedByMe ? ' · você já avaliou' : ''}</span>
+              </div>
             </div>
           </button>
         ))}
