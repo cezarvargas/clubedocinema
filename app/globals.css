@@ -64,9 +64,12 @@
   h1{
     font-family:'Fraunces',serif;
     font-weight:600;
-    font-size:26px;
+    font-size:24px;
     margin:0;
     line-height:1.15;
+  }
+  @media (max-width: 480px){
+    h1{font-size:20px;}
   }
   .sub{
     color:var(--muted);
@@ -87,17 +90,20 @@
     background:var(--surface);
     border:1px solid var(--line);
     border-radius:12px;
-    padding:14px 12px;
+    padding:12px 10px;
     text-align:left;
     color:var(--text);
     font-family:'Inter',sans-serif;
-    font-size:14.5px;
+    font-size:13px;
     font-weight:600;
     cursor:pointer;
     display:flex;
     align-items:center;
     gap:10px;
     transition:.15s;
+  }
+  @media (max-width: 480px){
+    .name-chip{font-size:12px;padding:10px 8px;}
   }
   .name-chip:hover{border-color:var(--gold);background:var(--surface-2);}
   .avatar-dot{
