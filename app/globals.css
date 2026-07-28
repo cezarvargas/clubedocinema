@@ -423,14 +423,24 @@
     display:flex;align-items:center;gap:6px;
   }
   .sheet-avg .chev{color:var(--muted);font-size:11px;}
-  .sheet-detail{display:none;padding:10px 0 4px;flex-wrap:wrap;gap:8px;}
-  .sheet-detail.open{display:flex;}
+  .sheet-detail{display:none;padding:10px 0 4px;gap:8px;grid-template-columns:repeat(3,1fr);}
+  .sheet-detail.open{display:grid;}
+  @media (min-width: 540px){
+    .sheet-detail{grid-template-columns:repeat(5,1fr);}
+  }
   .person-score{
     background:var(--surface);border:1px solid var(--line);border-radius:8px;
     padding:6px 10px;font-size:12px;display:flex;align-items:center;gap:6px;
   }
   .person-score .pname{color:var(--muted);}
   .person-score .pval{font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--text);}
+
+  .sheet-avaliar-btn{
+    background:var(--gold);color:#14100F;border:none;border-radius:6px;
+    padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;
+    transition:.15s;margin-top:8px;grid-column:1/-1;
+  }
+  .sheet-avaliar-btn:hover{background:var(--gold-soft);}
 
   .choice-card{
     width:100%;

@@ -107,7 +107,7 @@ export default function App() {
       {screen === 'confirm' && confirmData && (
         <ConfirmScreen data={confirmData} goTo={goTo} />
       )}
-      {screen === 'sheet' && <SheetScreen goTo={goTo} />}
+      {screen === 'sheet' && <SheetScreen goTo={goTo} onPickExisting={(m) => { setSelected(m); goTo('rate'); }} />}
     </div>
   );
 }
@@ -461,7 +461,7 @@ function ConfirmScreen({ data, goTo }) {
 // ---------------------------------------------------------------------
 // SHEET (Ver planilha completa)
 // ---------------------------------------------------------------------
-function SheetScreen({ goTo }) {
+function SheetScreen({ goTo, onPickExisting }) {
   const [query, setQuery] = useState('');
   const [tipo, setTipo] = useState('todos');
   const [sort, setSort] = useState('nome');
@@ -532,6 +532,11 @@ function SheetScreen({ goTo }) {
                     <span className="pname">{p}</span><span className="pval">{formatNota(s)}</span>
                   </div>
                 ))}
+                {openRow === i && onPickExisting && (
+                  <button className="sheet-avaliar-btn" onClick={() => onPickExisting(m)}>
+                    AVALIAR
+                  </button>
+                )}
               </div>
             </div>
           );
