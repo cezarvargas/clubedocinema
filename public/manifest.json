@@ -1,14 +1,19 @@
 {
   "name": "Clube do Cinema",
   "short_name": "Cinema",
+  "description": "App do Clube do Cinema",
+  "start_url": "/",
   "display": "standalone",
   "scope": "/",
-  "start_url": "/",
+  "orientation": "portrait-primary",
+  "background_color": "#1a1a1a",
+  "theme_color": "#D4AF37",
   "icons": [
     {
       "src": "/favicon.jpeg",
       "sizes": "any",
-      "type": "image/jpeg"
+      "type": "image/jpeg",
+      "purpose": "any"
     }
   ]
 }
