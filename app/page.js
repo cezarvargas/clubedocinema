@@ -231,7 +231,17 @@ function SearchScreen({ currentUser, goTo, onPickExisting, onNotFound }) {
       <div className="content">
         <div className="field">
           <label>NOME DO FILME OU SÉRIE</label>
-          <input type="text" placeholder="Digite o nome..." value={query} onChange={e => setQuery(e.target.value)} />
+          <input
+            type="text"
+            placeholder="Digite o nome..."
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter' && query.trim() && searched && matches.length === 0) {
+                onNotFound(query.trim());
+              }
+            }}
+          />
         </div>
 
         {matches.map(m => (
