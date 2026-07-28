@@ -327,14 +327,30 @@ function NewScreen({ currentUser, prefill, goTo, onDone }) {
   const [ano, setAno] = useState('');
   const [ondeVer, setOndeVer] = useState('');
   const [nota, setNota] = useState(3.5);
-  const [stage, setStage] = useState('form'); // form | validating | duplicate | unconfirmed
+  const [stage, setStage] = useState('form'); // form | validating | resultado | duplicate | confirmando
   const [validatingMsg] = useState('Conferindo no IMDb...');
   const [errorInfo, setErrorInfo] = useState(null);
-  const [pendingUnconfirmed, setPendingUnconfirmed] = useState(null);
+  const [validationResult, setValidationResult] = useState(null);
   const [dupInfo, setDupInfo] = useState(null);
 
-  async function save() {
+  async function validate() {
     setStage('validating');
+    try {
+      const { data } = await api('/api/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nome, tipo, ano: parseInt(ano, 10) }),
+      });
+      setValidationResult(data);
+      setStage('resultado');
+    } catch (err) {
+      setErrorInfo(err.message);
+      setStage('form');
+    }
+  }
+
+  async function confirmAndSave() {
+    setStage('confirmando');
     try {
       const { status, data } = await api('/api/register', {
         method: 'POST',
@@ -346,15 +362,10 @@ function NewScreen({ currentUser, prefill, goTo, onDone }) {
         setStage('duplicate');
         return;
       }
-      if (!data.confirmado) {
-        setPendingUnconfirmed(data);
-        setStage('unconfirmed');
-        return;
-      }
       onDone(data.mensagem);
     } catch (err) {
       setErrorInfo(err.message);
-      setStage('form');
+      setStage('resultado');
     }
   }
 
@@ -369,6 +380,62 @@ function NewScreen({ currentUser, prefill, goTo, onDone }) {
     );
   }
 
+  if (stage === 'resultado' && validationResult) {
+    if (validationResult.found && validationResult.filme) {
+      const f = validationResult.filme;
+      return (
+        <div className="screen">
+          <div className="back-row"><button className="back-btn" onClick={() => setStage('form')}>←</button></div>
+          <div className="topbar" style={{ borderBottom: 'none', paddingTop: 12 }}>
+            <p className="eyebrow">Novo no clube</p>
+            <h1>✅ Encontramos no IMDb</h1>
+          </div>
+          <div className="content">
+            <div className="summary-card">
+              <div className="summary-title">{f.nome}</div>
+              <div className="summary-meta"><span className="entry-badge">{typeLabel(f.tipo).toUpperCase()}</span>{f.ano}</div>
+              {f.imdbRating && <div className="summary-meta" style={{ marginTop: 8, fontSize: 13 }}>IMDb: {formatNota(f.imdbRating)}</div>}
+            </div>
+            <div style={{ marginBottom: 16 }}>
+              <a href={`https://www.imdb.com/title/${f.imdbId}/`} target="_blank" rel="noopener"
+                 style={{ color: 'var(--gold)', fontSize: 13, textDecoration: 'none' }}>
+                Ver no IMDb →
+              </a>
+            </div>
+            {errorInfo && <div className="status-banner status-error" style={{ display: 'block' }}>{errorInfo}</div>}
+            <button className="cta-primary" onClick={confirmAndSave} disabled={stage === 'confirmando'}>
+              {stage === 'confirmando' ? 'Salvando...' : 'Confirmar e salvar'}
+            </button>
+            <button className="link-btn" onClick={() => { setNome(''); setStage('form'); }}>Mudar o nome</button>
+          </div>
+        </div>
+      );
+    } else {
+      return (
+        <div className="screen">
+          <div className="back-row"><button className="back-btn" onClick={() => setStage('form')}>←</button></div>
+          <div className="topbar" style={{ borderBottom: 'none', paddingTop: 12 }}>
+            <p className="eyebrow">Novo no clube</p>
+            <h1>❌ Não encontramos no IMDb</h1>
+          </div>
+          <div className="content">
+            <p style={{ color: 'var(--muted)', fontSize: 13.5, lineHeight: 1.5, marginBottom: 16 }}>
+              Não achamos <strong style={{ color: 'var(--text)' }}>{nome}</strong> como <strong>{typeLabel(tipo)}</strong> de <strong>{ano}</strong> no IMDb ou TMDb.
+            </p>
+            <p style={{ color: 'var(--muted)', fontSize: 12.5, lineHeight: 1.5, marginBottom: 20 }}>
+              Você pode corrigir o nome e tentar novamente, ou cadastrar assim mesmo — vai aparecer sem link, em preto e negrito.
+            </p>
+            {errorInfo && <div className="status-banner status-error" style={{ display: 'block' }}>{errorInfo}</div>}
+            <button className="cta-primary" onClick={confirmAndSave} disabled={stage === 'confirmando'}>
+              {stage === 'confirmando' ? 'Salvando...' : 'Cadastrar assim mesmo'}
+            </button>
+            <button className="link-btn" onClick={() => { setNome(''); setStage('form'); }}>Mudar o nome</button>
+          </div>
+        </div>
+      );
+    }
+  }
+
   if (stage === 'duplicate' && dupInfo) {
     return (
       <div className="screen">
@@ -377,24 +444,6 @@ function NewScreen({ currentUser, prefill, goTo, onDone }) {
             Esse título já existe no clube: <strong>{dupInfo.nome}</strong> ({typeLabel(dupInfo.tipo)}, {dupInfo.ano}).
           </div>
           <button className="cta-primary" onClick={() => setStage('form')}>Voltar e corrigir</button>
-        </div>
-      </div>
-    );
-  }
-
-  if (stage === 'unconfirmed' && pendingUnconfirmed) {
-    return (
-      <div className="screen">
-        <div className="content">
-          <div className="status-banner" style={{ display: 'block', background: 'rgba(230,196,120,.12)', color: 'var(--gold)', border: '1px solid rgba(230,196,120,.3)' }}>
-            ⚠ Não confirmado no IMDb nem no TMDb
-          </div>
-          <p style={{ color: 'var(--muted)', fontSize: 13.5, lineHeight: 1.5, marginTop: 10 }}>
-            Não achamos <strong style={{ color: 'var(--text)' }}>{nome}</strong> como <strong>{typeLabel(tipo)}</strong> de <strong>{ano}</strong> em
-            nenhuma das duas bases. Mesmo assim, seu cadastro <strong style={{ color: 'var(--text)' }}>já foi salvo</strong> na
-            planilha — o nome vai aparecer sem link, em preto e negrito, até alguém revisar manualmente.
-          </p>
-          <button className="cta-primary" onClick={() => onDone(pendingUnconfirmed.mensagem)}>Entendi, continuar</button>
         </div>
       </div>
     );
@@ -436,9 +485,9 @@ function NewScreen({ currentUser, prefill, goTo, onDone }) {
         </div>
 
         {errorInfo && <div className="status-banner status-error" style={{ display: 'block' }}>{errorInfo}</div>}
-        <button className="cta-primary" onClick={save} disabled={!nome || !ano}>Salvar avaliação</button>
+        <button className="cta-primary" onClick={validate} disabled={!nome || !ano}>Validar no IMDb</button>
         <p style={{ color: 'var(--muted)', fontSize: 12, textAlign: 'center', marginTop: 10 }}>
-          Ao salvar, o app confere e completa esses dados com o IMDb. O cadastro nunca é bloqueado.
+          Vamos checar se o filme existe no IMDb. Depois você confirma ou ajusta o nome.
         </p>
       </div>
     </div>
