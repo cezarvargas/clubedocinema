@@ -184,6 +184,11 @@ function HomeScreen({ currentUser, goTo, onSignOut }) {
                   <span className="pname">{p}</span><span className="pval">{formatNota(s)}</span>
                 </div>
               ))}
+              {openIndex === i && (
+                <button className="sheet-avaliar-btn" onClick={() => goTo('search')}>
+                  AVALIAR
+                </button>
+              )}
             </div>
           </div>
         ))}
