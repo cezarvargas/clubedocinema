@@ -143,12 +143,12 @@ function HomeScreen({ currentUser, goTo, onSignOut }) {
             <p className="eyebrow">CLUBE DO CINEMA</p>
             <h1>Olá, {currentUser}</h1>
           </div>
-          <button className="signout" onClick={onSignOut}>trocar</button>
+          <button className="signout" onClick={onSignOut}>Início</button>
         </div>
       </div>
       <div className="content">
-        <button className="cta-primary" onClick={() => goTo('search')}>🎬 Avaliar filme ou série</button>
-        <button className="cta-secondary" onClick={() => goTo('sheet')}>📋 Ver planilha completa</button>
+        <button className="cta-primary" onClick={() => goTo('sheet')}>📋 Ver planilha/avaliar</button>
+        <button className="cta-secondary" onClick={() => goTo('search')}>🎬 Incluir novo filme ou série</button>
 
         <p className="section-label">Últimos lançamentos</p>
         <p style={{ color: 'var(--muted)', fontSize: 11, margin: '-8px 0 12px' }}>
