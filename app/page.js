@@ -185,7 +185,7 @@ function HomeScreen({ currentUser, goTo, onSignOut, onPickExisting }) {
                 </div>
               ))}
               {openIndex === i && onPickExisting && (
-                <button className="sheet-avaliar-btn" onClick={() => onPickExisting(r)}>
+                <button className="sheet-avaliar-btn" onClick={() => onPickExisting({ ...r, nome: r.nome || r.titulo })}>
                   AVALIAR
                 </button>
               )}
