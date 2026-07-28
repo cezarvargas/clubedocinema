@@ -307,6 +307,80 @@ Ver logs: Vercel Dashboard → Deployments
 
 ---
 
+## ❌ O Que NÃO Foi Possível Fazer
+
+### PWA Funcional no Android
+**Tentativas:** 5+ configurações diferentes testadas
+
+1. Manifest.json + Favicon (PNG/JPEG)
+   - Chrome oferecia "Instalar" mas não instalava
+   - Resultado: falha silenciosa
+
+2. Service Worker básico
+   - Chrome ofereceu "Instalar" uma vez
+   - Depois parou de oferecer
+   - Resultado: falha
+
+3. Múltiplas configurações PWA
+   - Meta tags completas
+   - Manifest simplificado
+   - Ícones em vários formatos (.ico, .jpeg, .png, .svg)
+   - Resultado: nenhuma funcionou
+
+4. Teste comparativo
+   - Squoosh (PWA funcional) instala perfeitamente no Galaxy S25
+   - Nosso app: Chrome não oferece opção
+   - Conclusão: problema específico de nossa config ou app
+
+**Causa provável:**
+- Chrome cacheia decisão de "falha de instalação" das tentativas anteriores
+- Sem manifest.json/service worker, Chrome não reconhece como PWA
+- Pode haver algo no app que Chrome detecta como problema
+
+**Impacto:**
+- ⚠️ App não funciona como PWA instalável
+- ✅ Mas funciona 100% via navegador (sem limitações funcionais)
+
+### Ícone Customizado no Atalho
+**Tentativas:** favicon.png, favicon.jpeg, favicon.ico, favicon.svg
+
+- Android/Chrome não reconhecia as imagens
+- Nenhum formato funcionou
+- **Impacto:** Atalho (se conseguir criar) aparece com ícone genérico
+
+### Chrome Bloqueando Este App
+**Problema:** 
+- Chrome oferece "Adicionar à tela inicial" para qualquer outro site
+- **APENAS ESTE APP** não oferece a opção
+- Provavelmente cache negativo das tentativas anteriores
+
+**Impacto:**
+- Usuário não consegue criar atalho manualmente
+- Solução parcial: usar outro navegador ou limpar cache
+
+### Service Worker Instável
+- Criei service worker
+- Chrome detectou mas depois rejeitou
+- Nunca se registrou corretamente
+- **Impacto:** App não tem cache offline
+
+---
+
+## ✅ O Que FOI Possível Fazer
+
+- ✅ App 100% funcional (todas as features)
+- ✅ Integração Dropbox perfeita
+- ✅ Deploy automático Vercel
+- ✅ Validação de títulos (OMDb + TMDb)
+- ✅ Mensagens WhatsApp
+- ✅ Documentação completa
+
+---
+
+**Conclusão:** O app funciona perfeitamente via navegador. PWA é apenas conveniência visual - não é crítico.
+
+---
+
 ## 📖 Referências Documentação
 
 - `PROCESSO_App_Clube_Cinema_1.txt` - visão geral completa
