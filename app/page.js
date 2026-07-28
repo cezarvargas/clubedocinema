@@ -237,28 +237,39 @@ function SearchScreen({ currentUser, goTo, onPickExisting, onNotFound }) {
             value={query}
             onChange={e => setQuery(e.target.value)}
             onKeyDown={e => {
-              if (e.key === 'Enter' && query.trim() && searched && matches.length === 0) {
+              if (e.key === 'Enter' && query.trim()) {
                 onNotFound(query.trim());
               }
             }}
           />
         </div>
 
-        {matches.map(m => (
-          <button key={m.rowNumber} className="choice-card" onClick={() => onPickExisting(m)}>
-            <div style={{ width: '100%' }}>
-              {m.imdbLink ? (
-                <a href={m.imdbLink} target="_blank" rel="noopener" onClick={(e) => e.stopPropagation()} style={{ color: '#5B9FD9', textDecoration: 'none', fontSize: '14px', fontWeight: '500', marginBottom: '8px', display: 'block' }}>
-                  {m.nome} <span style={{ fontSize: '12px', color: 'var(--muted)' }}>↗</span>
-                </a>
-              ) : <div style={{ fontSize: '14px', fontWeight: '500', marginBottom: '8px', color: 'var(--text)' }}>{m.nome}</div>}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <span style={{ fontSize: '18px' }}>{m.tipo === 'S' || m.tipo === 'MS' ? '📺' : '🎬'}</span>
-                <span style={{ fontSize: '13px', color: 'var(--muted)' }}>{typeLabel(m.tipo)} · {m.ano}{m.alreadyRatedByMe ? ' · você já avaliou' : ''}</span>
-              </div>
-            </div>
+        {matches.length > 0 && (
+          <div style={{ marginBottom: 16 }}>
+            <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 12 }}>Filmes encontrados:</p>
+            {matches.map(m => (
+              <button key={m.rowNumber} className="choice-card" onClick={() => onPickExisting(m)}>
+                <div style={{ width: '100%' }}>
+                  {m.imdbLink ? (
+                    <a href={m.imdbLink} target="_blank" rel="noopener" onClick={(e) => e.stopPropagation()} style={{ color: '#5B9FD9', textDecoration: 'none', fontSize: '14px', fontWeight: '500', marginBottom: '8px', display: 'block' }}>
+                      {m.nome} <span style={{ fontSize: '12px', color: 'var(--muted)' }}>↗</span>
+                    </a>
+                  ) : <div style={{ fontSize: '14px', fontWeight: '500', marginBottom: '8px', color: 'var(--text)' }}>{m.nome}</div>}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span style={{ fontSize: '18px' }}>{m.tipo === 'S' || m.tipo === 'MS' ? '📺' : '🎬'}</span>
+                    <span style={{ fontSize: '13px', color: 'var(--muted)' }}>{typeLabel(m.tipo)} · {m.ano}{m.alreadyRatedByMe ? ' · você já avaliou' : ''}</span>
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {query.trim() && (
+          <button className="link-btn" onClick={() => onNotFound(query.trim())} style={{ display: 'block', width: '100%', textAlign: 'center', marginTop: 16 }}>
+            Nenhum desses? Cadastrar "{query.trim()}" como novo
           </button>
-        ))}
+        )}
 
         {searched && matches.length === 0 && (
           <div>
