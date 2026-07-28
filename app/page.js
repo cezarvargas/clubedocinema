@@ -231,17 +231,39 @@ function SearchScreen({ currentUser, goTo, onPickExisting, onNotFound }) {
       <div className="content">
         <div className="field">
           <label>NOME DO FILME OU SÉRIE</label>
-          <input
-            type="text"
-            placeholder="Digite o nome..."
-            value={query}
-            onChange={e => setQuery(e.target.value)}
-            onKeyDown={e => {
-              if (e.key === 'Enter' && query.trim()) {
-                onNotFound(query.trim());
-              }
-            }}
-          />
+          <div style={{ position: 'relative', display: 'flex', gap: 8 }}>
+            <input
+              type="text"
+              placeholder="Digite o nome..."
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter' && query.trim()) {
+                  e.preventDefault();
+                  onNotFound(query.trim());
+                }
+              }}
+              style={{ flex: 1 }}
+            />
+            {query.trim() && (
+              <button
+                onClick={() => onNotFound(query.trim())}
+                style={{
+                  background: 'var(--gold)',
+                  color: '#1a1a1a',
+                  border: 'none',
+                  padding: '12px 16px',
+                  borderRadius: 8,
+                  fontSize: 14,
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                + Novo
+              </button>
+            )}
+          </div>
         </div>
 
         {matches.length > 0 && (
@@ -263,12 +285,6 @@ function SearchScreen({ currentUser, goTo, onPickExisting, onNotFound }) {
               </button>
             ))}
           </div>
-        )}
-
-        {query.trim() && (
-          <button className="link-btn" onClick={() => onNotFound(query.trim())} style={{ display: 'block', width: '100%', textAlign: 'center', marginTop: 16 }}>
-            Nenhum desses? Cadastrar "{query.trim()}" como novo
-          </button>
         )}
 
         {searched && matches.length === 0 && (
