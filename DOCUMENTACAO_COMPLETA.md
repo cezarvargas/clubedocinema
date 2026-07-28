@@ -140,22 +140,75 @@ Acessa: `http://localhost:3000`
 
 ## 🐛 Problemas Conhecidos & Soluções
 
-### PWA no Android
+### PWA no Android - INVESTIGAÇÃO COMPLETA
 
-**Problema:** App não instala como PWA no Android (nem Galaxy S25)
+**Problema:** App não instala como PWA no Android (Galaxy S25)
 
-**Causa:** Configuração incompleta de service worker + manifest.json
+**Tentativas realizadas:**
 
-**Solução atual:** 
-- Usar via navegador (funciona 100%)
-- Criar atalho manualmente (funciona igual a app)
-- PWA é apenas conveniência visual, não essencial
+1. **Manifest.json + Favicon (PNG/JPEG)**
+   - Chrome oferecia "Instalar" mas não instalava
+   - Resultado: falha silenciosa
 
-**Se quiser resolver PWA:**
-- Inspeccionar service worker no Chrome DevTools
-- Verificar se `sw.js` está registrando
-- Comparar com PWAs que funcionam (ex: Squoosh)
-- Possível solução: usar Lovable ou framework com melhor suporte PWA
+2. **Service Worker básico**
+   - Chrome ofereceu "Instalar" uma vez
+   - Depois parou de oferecer
+   - Resultado: falha
+
+3. **Múltiplas configurações PWA**
+   - Meta tags completas
+   - Manifest simplificado
+   - Ícones em vários formatos (.ico, .jpeg, .png)
+   - Resultado: nenhuma funcionou
+
+4. **Teste comparativo**
+   - Squoosh (PWA funcional) instala perfeitamente no S25
+   - Nosso app: Chrome não oferece opção
+   - Conclusão: problema específico de nossa config ou app
+
+**Causa provável:**
+- Chrome cacheia decisão de "falha de instalação" das tentativas anteriores
+- Sem manifest.json/service worker, Chrome não reconhece como PWA
+- Pode haver algo no app que Chrome detecta como problema
+
+**Solução final adotada:**
+- ❌ Remover PWA completamente (manifest.json, sw.js)
+- ❌ Remover ícones customizados
+- ✅ App web simples e funcional
+- ✅ Sem complicações de PWA
+- ✅ **Funciona 100% via navegador**
+
+### Como criar atalho manualmente
+
+**No Chrome:**
+1. Acessa: https://clube-cinema-app.vercel.app
+2. Toca em **⋮ (menu)**
+3. Procura: "Adicionar à tela inicial" / "Instalar app"
+4. Se não achar, tenta **⋮ → Compartilhar**
+
+**Problema encontrado:**
+- Chrome oferece essa opção para qualquer site
+- **EXCETO para este app específico**
+- Causa: cache negativo de tentativas anteriores de PWA
+
+**Soluções:**
+1. **Limpar cache do Chrome:**
+   - Configurações → Apps → Chrome → Armazenamento → Limpar cache
+   - Força parada do Chrome
+   - Reabra e tente novamente
+
+2. **Modo anônimo:**
+   - Chrome → ⋮ → Nova aba anônimo
+   - Acessa: https://clube-cinema-app.vercel.app
+   - Tenta adicionar atalho
+
+3. **Outro navegador:**
+   - Firefox → ⋮ → Instalar app
+
+**Status:**
+- App funciona perfeitamente via navegador ✅
+- Atalho é apenas conveniência visual
+- Recomendação: usar via navegador (não é limitação funcional)
 
 ---
 
