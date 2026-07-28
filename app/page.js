@@ -394,7 +394,7 @@ function NewScreen({ currentUser, prefill, goTo, onDone }) {
             <a href={`https://www.imdb.com/title/${f.imdbId}/`} target="_blank" rel="noopener"
                style={{ textDecoration: 'none', color: 'inherit' }}>
               <div className="summary-card">
-                <div className="summary-title" style={{ cursor: 'pointer' }}>{f.nome}<span style={{ fontSize: '0.7em', marginLeft: 4 }}>↗</span></div>
+                <div className="summary-title" style={{ cursor: 'pointer', color: '#6BA3FF' }}>{f.nome}<span style={{ fontSize: '0.7em', marginLeft: 4 }}>↗</span></div>
                 <div className="summary-meta"><span className="entry-badge">{typeLabel(f.tipo).toUpperCase()}</span>{f.ano}</div>
                 {f.imdbRating && <div className="summary-meta" style={{ marginTop: 8, fontSize: 13 }}>IMDb: {formatNota(f.imdbRating)}</div>}
               </div>
@@ -403,7 +403,7 @@ function NewScreen({ currentUser, prefill, goTo, onDone }) {
             <button className="cta-primary" onClick={confirmAndSave} disabled={stage === 'confirmando'}>
               {stage === 'confirmando' ? 'Salvando...' : 'Confirmar e salvar'}
             </button>
-            <button className="link-btn" onClick={() => { setNome(''); setStage('form'); }}>Mudar o nome</button>
+            <button className="link-btn" onClick={() => setStage('form')} style={{ fontSize: 15, fontWeight: 500 }}>Alterar</button>
           </div>
         </div>
       );
