@@ -78,7 +78,7 @@ export default function App() {
     <div className="app-shell">
       <Filmstrip />
       {screen === 'home' && (
-        <HomeScreen currentUser={currentUser} goTo={goTo} onSignOut={() => { setCurrentUser(null); goTo('login'); }} />
+        <HomeScreen currentUser={currentUser} goTo={goTo} onSignOut={() => { setCurrentUser(null); goTo('login'); }} onPickExisting={(m) => { setSelected(m); goTo('rate'); }} />
       )}
       {screen === 'search' && (
         <SearchScreen
@@ -122,7 +122,7 @@ function Filmstrip() { return <div className="filmstrip" />; }
 // ---------------------------------------------------------------------
 // HOME
 // ---------------------------------------------------------------------
-function HomeScreen({ currentUser, goTo, onSignOut }) {
+function HomeScreen({ currentUser, goTo, onSignOut, onPickExisting }) {
   const [recent, setRecent] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -184,8 +184,8 @@ function HomeScreen({ currentUser, goTo, onSignOut }) {
                   <span className="pname">{p}</span><span className="pval">{formatNota(s)}</span>
                 </div>
               ))}
-              {openIndex === i && (
-                <button className="sheet-avaliar-btn" onClick={() => goTo('search')}>
+              {openIndex === i && onPickExisting && (
+                <button className="sheet-avaliar-btn" onClick={() => onPickExisting(r)}>
                   AVALIAR
                 </button>
               )}
