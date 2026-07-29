@@ -102,6 +102,7 @@ export default function App() {
         <NewScreen
           currentUser={currentUser}
           prefill={prefillTitle}
+          prefillData={prefillData}
           goTo={goTo}
           onDone={(mensagem) => { setConfirmData(buildConfirm(mensagem)); goTo('confirm'); }}
         />
