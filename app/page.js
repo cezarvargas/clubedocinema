@@ -245,7 +245,8 @@ function SearchScreen({ currentUser, goTo, onPickExisting, onNotFound, setPrefil
       onPickExisting({ rowNumber: filme.rowNumber, nome: filme.nome, tipo: filme.tipo, ano: filme.ano, imdbLink: `https://www.imdb.com/title/${filme.imdbId}/` });
     } else {
       // Se não existe, vai cadastrar com dados do IMDb preenchidos
-      setPrefillData({ nome: filme.nome, ano: parseInt(filme.ano, 10), tipo: filme.tipo });
+      // Não pode usar setPrefillData + goTo porque são assíncronos
+      // Passa os dados via onNotFound diretamente
       onNotFound(filme.nome);
     }
   }
@@ -404,6 +405,14 @@ function NewScreen({ currentUser, prefill, prefillData, goTo, onDone }) {
   const [errorInfo, setErrorInfo] = useState(null);
   const [validationResult, setValidationResult] = useState(null);
   const [dupInfo, setDupInfo] = useState(null);
+
+  useEffect(() => {
+    if (prefillData) {
+      setNome(prefillData.nome || '');
+      setTipo(prefillData.tipo || 'F');
+      setAno(prefillData.ano ? String(prefillData.ano) : '');
+    }
+  }, [prefillData]);
 
   async function validate() {
     setStage('validating');
