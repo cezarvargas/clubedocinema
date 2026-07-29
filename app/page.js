@@ -238,8 +238,13 @@ function SearchScreen({ currentUser, goTo, onPickExisting, onNotFound }) {
   }
 
   function irParaCadastro(filme) {
-    // Vai pro cadastro com os dados do filme do IMDb
-    onNotFound(filme.nome);
+    if (filme.existsInClub) {
+      // Se já existe, vai avaliar
+      onPickExisting({ rowNumber: filme.rowNumber, nome: filme.nome, tipo: filme.tipo, ano: filme.ano, imdbLink: `https://www.imdb.com/title/${filme.imdbId}/` });
+    } else {
+      // Se não existe, vai cadastrar
+      onNotFound(filme.nome);
+    }
   }
 
   return (
@@ -295,11 +300,11 @@ function SearchScreen({ currentUser, goTo, onPickExisting, onNotFound }) {
                     {m.nome} <span style={{ fontSize: 11 }}>↗</span>
                   </a>
                   <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>
-                    {typeLabel(m.tipo)} · {m.ano}
+                    {typeLabel(m.tipo)} · {m.ano} {m.existsInClub && '· Já no clube'}
                   </div>
                 </div>
                 <button className="link-btn" onClick={() => irParaCadastro(m)} style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
-                  Cadastrar este
+                  {m.existsInClub ? 'Avaliar' : 'Cadastrar este'}
                 </button>
               </div>
             ))}
