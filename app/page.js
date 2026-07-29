@@ -204,7 +204,7 @@ function HomeScreen({ currentUser, goTo, onSignOut, onPickExisting }) {
 // ---------------------------------------------------------------------
 // SEARCH ("O que você viu?")
 // ---------------------------------------------------------------------
-function SearchScreen({ currentUser, goTo, onPickExisting, onNotFound }) {
+function SearchScreen({ currentUser, goTo, onPickExisting, onNotFound, setPrefillData }) {
   const [nome, setNome] = useState('');
   const [ano, setAno] = useState('');
   const [tipo, setTipo] = useState('F');
@@ -242,7 +242,8 @@ function SearchScreen({ currentUser, goTo, onPickExisting, onNotFound }) {
       // Se já existe, vai avaliar
       onPickExisting({ rowNumber: filme.rowNumber, nome: filme.nome, tipo: filme.tipo, ano: filme.ano, imdbLink: `https://www.imdb.com/title/${filme.imdbId}/` });
     } else {
-      // Se não existe, vai cadastrar
+      // Se não existe, vai cadastrar com dados do IMDb preenchidos
+      setPrefillData({ nome: filme.nome, ano: parseInt(filme.ano, 10), tipo: filme.tipo });
       onNotFound(filme.nome);
     }
   }
