@@ -9,9 +9,9 @@ export async function POST(request) {
       return Response.json({ error: 'Campos obrigatórios: nome, tipo, ano, pessoa, nota.' }, { status: 400 });
     }
 
-    const { omdbKey } = getKeys();
+    const { omdbKey, tmdbKey } = getKeys();
     const sheet = await loadFromDropbox();
-    const result = await registerAction(sheet, { nome, tipo, ano, ondeVer, pessoa, nota, omdbKey });
+    const result = await registerAction(sheet, { nome, tipo, ano, ondeVer, pessoa, nota, omdbKey, tmdbKey });
 
     if (result.error === 'duplicate') {
       return Response.json(result, { status: 409 }); // 409 Conflict

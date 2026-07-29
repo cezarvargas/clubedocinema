@@ -9,9 +9,9 @@ export async function POST(request) {
       return Response.json({ error: 'Campos obrigatórios: rowNumber, pessoa, nota.' }, { status: 400 });
     }
 
-    const { omdbKey } = getKeys();
+    const { omdbKey, tmdbKey } = getKeys();
     const sheet = await loadFromDropbox();
-    const result = await rateAction(sheet, { rowNumber, pessoa, nota, omdbKey });
+    const result = await rateAction(sheet, { rowNumber, pessoa, nota, omdbKey, tmdbKey });
 
     await saveToDropbox(sheet);
     return Response.json(result);
