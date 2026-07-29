@@ -86,6 +86,7 @@ export default function App() {
           goTo={goTo}
           onPickExisting={(m) => { setSelected(m); goTo('rate'); }}
           onNotFound={(typed) => { setPrefillTitle(typed); goTo('new'); }}
+          setPrefillData={setPrefillData}
         />
       )}
       {screen === 'rate' && selected && (
