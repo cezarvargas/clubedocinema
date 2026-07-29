@@ -1,6 +1,6 @@
 import { getKeys } from '../../../lib/withSheet';
 import { loadFromDropbox } from '../../../lib/withSheet';
-import { tmdbSearch, tmdbExternalIds } from '../../../lib/tmdb';
+import { omdbLookup } from '../../../lib/omdb';
 import { findDuplicate } from '../../../lib/sheet';
 
 export async function POST(request) {
@@ -12,39 +12,27 @@ export async function POST(request) {
       return Response.json({ error: 'Campos obrigatórios: nome, tipo, ano.' }, { status: 400 });
     }
 
-    const { tmdbKey } = getKeys();
-    const candidates = await tmdbSearch({ nome, tipo, apiKey: tmdbKey });
+    const { omdbKey } = getKeys();
 
-    if (candidates.length === 0) {
+    // Busca no IMDb (OMDb) - retorna 1 resultado exato ou nulo
+    const found = await omdbLookup({ nome, ano, tipo, apiKey: omdbKey });
+
+    if (!found) {
       return Response.json({ matches: [] });
     }
 
     // Carrega a planilha pra verificar duplicatas
     const sheet = await loadFromDropbox();
+    const existsInClub = findDuplicate(sheet, { nome: found.nome, ano: found.ano, tipo });
 
-    // Filtra por ano (máximo 2 anos de diferença)
-    const filtered = candidates
-      .filter(c => Math.abs(parseInt(c.year, 10) - ano) <= 2)
-      .slice(0, 5);
-
-    // Busca IMDb ID pra cada candidato e verifica se já existe na planilha
-    const matches = [];
-    for (const c of filtered) {
-      const imdbId = await tmdbExternalIds({ tmdbId: c.tmdbId, tipo, apiKey: tmdbKey });
-      if (imdbId) {
-        // Verifica se já existe na planilha
-        const existsInClub = findDuplicate(sheet, { nome: c.title, ano: c.year, tipo });
-
-        matches.push({
-          imdbId,
-          nome: c.title,
-          ano: c.year,
-          tipo,
-          existsInClub: !!existsInClub,
-          rowNumber: existsInClub?.rowNumber || null,
-        });
-      }
-    }
+    const matches = [{
+      imdbId: found.imdbId,
+      nome: found.nome,
+      ano: found.ano,
+      tipo,
+      existsInClub: !!existsInClub,
+      rowNumber: existsInClub?.rowNumber || null,
+    }];
 
     return Response.json({ matches });
   } catch (err) {
