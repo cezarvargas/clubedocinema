@@ -393,10 +393,10 @@ function RateScreen({ currentUser, match, goTo, onDone }) {
 // ---------------------------------------------------------------------
 // NEW (cadastro de título novo)
 // ---------------------------------------------------------------------
-function NewScreen({ currentUser, prefill, goTo, onDone }) {
-  const [nome, setNome] = useState(prefill || '');
-  const [tipo, setTipo] = useState('F');
-  const [ano, setAno] = useState('');
+function NewScreen({ currentUser, prefill, prefillData, goTo, onDone }) {
+  const [nome, setNome] = useState(prefillData?.nome || prefill || '');
+  const [tipo, setTipo] = useState(prefillData?.tipo || 'F');
+  const [ano, setAno] = useState(prefillData?.ano ? String(prefillData.ano) : '');
   const [ondeVer, setOndeVer] = useState('');
   const [nota, setNota] = useState(3.5);
   const [stage, setStage] = useState('form'); // form | validating | resultado | duplicate | confirmando
