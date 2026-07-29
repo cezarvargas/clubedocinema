@@ -259,14 +259,13 @@ function SearchScreen({ currentUser, goTo, onPickExisting, onNotFound }) {
           <label>ANO</label>
           <input type="text" placeholder="Ex: 2024" value={ano} onChange={e => {
             const val = e.target.value;
-            if (val === '') setAno('');
-            else {
-              const num = parseInt(val, 10);
-              if (num >= 1900 && num <= 2027) setAno(val);
+            // Só aceita números, máximo 4 dígitos
+            if (/^\d{0,4}$/.test(val)) {
+              setAno(val);
             }
           }} maxLength="4" />
-          {ano && (ano.length !== 4 || isNaN(parseInt(ano, 10))) && (
-            <p style={{ color: 'var(--error)', fontSize: 12, marginTop: 6 }}>Ano deve ter 4 dígitos</p>
+          {ano && ano.length === 4 && (isNaN(parseInt(ano, 10)) || parseInt(ano, 10) < 1900 || parseInt(ano, 10) > 2027) && (
+            <p style={{ color: 'var(--error)', fontSize: 12, marginTop: 6 }}>Ano deve estar entre 1900 e 2027</p>
           )}
         </div>
 
