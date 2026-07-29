@@ -548,10 +548,9 @@ function NewScreen({ currentUser, prefill, goTo, onDone }) {
         </div>
 
         {errorInfo && <div className="status-banner status-error" style={{ display: 'block' }}>{errorInfo}</div>}
-        <button className="cta-primary" onClick={validate} disabled={!nome || !ano}>Validar no IMDb</button>
-        <p style={{ color: 'var(--muted)', fontSize: 12, textAlign: 'center', marginTop: 10 }}>
-          Vamos checar se o filme existe no IMDb. Depois você confirma ou ajusta o nome.
-        </p>
+        <button className="cta-primary" onClick={validate} disabled={!nome || !ano}>
+          Cadastrar
+        </button>
       </div>
     </div>
   );
