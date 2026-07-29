@@ -33,6 +33,7 @@ export default function App() {
   // dados de navegação entre telas (o que a tela seguinte precisa saber)
   const [selected, setSelected] = useState(null); // título escolhido pra avaliar (existente)
   const [prefillTitle, setPrefillTitle] = useState('');
+  const [prefillData, setPrefillData] = useState(null); // { nome, ano, tipo }
   const [confirmData, setConfirmData] = useState(null); // { mensagem, waLink }
 
   useEffect(() => {
@@ -320,7 +321,10 @@ function SearchScreen({ currentUser, goTo, onPickExisting, onNotFound, setPrefil
         )}
 
         {searched && (
-          <button className="link-btn" onClick={() => onNotFound(nome.trim())} style={{ display: 'block', width: '100%', textAlign: 'center', marginTop: 16 }}>
+          <button className="link-btn" onClick={() => {
+            setPrefillData({ nome: nome.trim(), ano: parseInt(ano, 10), tipo });
+            onNotFound(nome.trim());
+          }} style={{ display: 'block', width: '100%', textAlign: 'center', marginTop: 16 }}>
             Cadastrar como novo
           </button>
         )}
