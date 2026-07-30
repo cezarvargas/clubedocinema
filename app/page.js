@@ -498,7 +498,7 @@ function NewScreen({ currentUser, prefill, prefillData, goTo, onDone }) {
           </div>
           <div className="content">
             <p style={{ color: 'var(--muted)', fontSize: 13.5, lineHeight: 1.5, marginBottom: 16 }}>
-              Não achamos <strong style={{ color: 'var(--text)' }}>{nome}</strong> como <strong>{typeLabel(tipo)}</strong> de <strong>{ano}</strong> no IMDb.
+              Não achamos <strong style={{ color: 'var(--text)' }}>{nome}</strong> como <strong>{typeLabel(tipo)}</strong> de <strong>{ano}</strong> no IMDb ou TMDb.
             </p>
             <p style={{ color: 'var(--muted)', fontSize: 12.5, lineHeight: 1.5, marginBottom: 20 }}>
               Você pode corrigir o nome e tentar novamente, ou cadastrar assim mesmo — vai aparecer sem link, em preto e negrito.
