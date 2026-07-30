@@ -1,7 +1,6 @@
-const CACHE_NAME = 'clube-do-cinema-v1';
+const CACHE_NAME = 'clube-do-cinema-v2';
 const urlsToCache = [
   '/',
-  '/favicon.ico',
   '/favicon.jpeg',
   '/manifest.json',
 ];
