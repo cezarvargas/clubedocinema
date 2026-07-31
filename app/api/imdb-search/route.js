@@ -12,11 +12,12 @@ export async function POST(request) {
       return Response.json({ error: 'Campos obrigatórios: nome, tipo, ano.' }, { status: 400 });
     }
 
-    const { tmdbKey } = getKeys();
+    const { tmdbKey, omdbKey } = getKeys();
     console.log(`[imdb-search] tmdbKey extraído:`, tmdbKey ? 'OK' : 'UNDEFINED');
+    console.log(`[imdb-search] omdbKey extraído:`, omdbKey ? 'OK' : 'UNDEFINED');
 
-    // Busca no TMDb - retorna 1 resultado exato ou nulo
-    const found = await tmdbLookup({ nome, tipo, apiKey: tmdbKey, ano });
+    // Busca no TMDb (com fallback para OMDb)
+    const found = await tmdbLookup({ nome, tipo, apiKey: tmdbKey, ano, omdbKey });
 
     if (!found) {
       return Response.json({ matches: [] });

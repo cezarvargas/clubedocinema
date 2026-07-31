@@ -246,7 +246,7 @@ function SearchScreen({ currentUser, goTo, onPickExisting, onNotFound, setPrefil
       onPickExisting({ rowNumber: filme.rowNumber, nome: filme.nome, tipo: filme.tipo, ano: filme.ano, imdbLink: `https://www.imdb.com/title/${filme.imdbId}/` });
     } else {
       // Se não existe, vai cadastrar com dados do IMDb preenchidos
-      setPrefillData({ nome: filme.nome, ano: parseInt(filme.ano, 10), tipo: filme.tipo });
+      setPrefillData({ nome: filme.nome, ano: parseInt(filme.ano, 10), tipo: filme.tipo, imdbId: filme.imdbId });
       goTo('new');
     }
   }
@@ -308,7 +308,7 @@ function SearchScreen({ currentUser, goTo, onPickExisting, onNotFound, setPrefil
                   </div>
                 </div>
                 <button className="link-btn" onClick={() => irParaCadastro(m)} style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
-                  {m.existsInClub ? 'Avaliar' : 'Cadastrar este'}
+                  {m.existsInClub ? 'Avaliar' : 'Cadastrar como novo'}
                 </button>
               </div>
             ))}
@@ -316,18 +316,24 @@ function SearchScreen({ currentUser, goTo, onPickExisting, onNotFound, setPrefil
         )}
 
         {searched && imdbMatches.length === 0 && (
-          <div style={{ marginTop: 20 }}>
-            <div className="status-banner status-new" style={{ display: 'block' }}>❌ Não encontramos no IMDb</div>
+          <div className="choice-card" style={{ padding: 12, marginTop: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <div style={{ color: 'var(--muted)', fontSize: 14, fontWeight: 500 }}>
+                ❌ Não encontramos
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>
+                {typeLabel(tipo)} · {ano}
+              </div>
+            </div>
+            <button className="link-btn" onClick={() => {
+              // Não encontrou nada, cadastra sem imdbId
+              // Usa imdbId: null pra indicar "já validado, não encontrado"
+              setPrefillData({ nome: nome.trim(), ano: parseInt(ano, 10), tipo, imdbId: null });
+              onNotFound(nome.trim());
+            }} style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
+              Cadastrar como novo sem IMDb
+            </button>
           </div>
-        )}
-
-        {searched && (
-          <button className="link-btn" onClick={() => {
-            setPrefillData({ nome: nome.trim(), ano: parseInt(ano, 10), tipo });
-            onNotFound(nome.trim());
-          }} style={{ display: 'block', width: '100%', textAlign: 'center', marginTop: 16 }}>
-            Cadastrar como novo
-          </button>
         )}
       </div>
     </div>
@@ -436,7 +442,7 @@ function NewScreen({ currentUser, prefill, prefillData, goTo, onDone }) {
       const { status, data } = await api('/api/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nome, tipo, ano: parseInt(ano, 10), ondeVer, pessoa: currentUser, nota }),
+        body: JSON.stringify({ nome, tipo, ano: parseInt(ano, 10), ondeVer, pessoa: currentUser, nota, imdbId: prefillData?.imdbId }),
       });
       if (status === 409) {
         setDupInfo(data.existing);
@@ -568,7 +574,7 @@ function NewScreen({ currentUser, prefill, prefillData, goTo, onDone }) {
         </div>
 
         {errorInfo && <div className="status-banner status-error" style={{ display: 'block' }}>{errorInfo}</div>}
-        <button className="cta-primary" onClick={validate} disabled={!nome || !ano}>
+        <button className="cta-primary" onClick={() => { prefillData?.imdbId !== undefined ? confirmAndSave() : validate(); }} disabled={!nome || !ano}>
           Cadastrar
         </button>
       </div>
