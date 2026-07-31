@@ -1,6 +1,6 @@
 import { getKeys } from '../../../lib/withSheet';
 import { loadFromDropbox } from '../../../lib/withSheet';
-import { omdbLookup } from '../../../lib/omdb';
+import { tmdbLookup } from '../../../lib/tmdb';
 import { findDuplicate } from '../../../lib/sheet';
 
 export async function POST(request) {
@@ -12,10 +12,11 @@ export async function POST(request) {
       return Response.json({ error: 'Campos obrigatórios: nome, tipo, ano.' }, { status: 400 });
     }
 
-    const { omdbKey } = getKeys();
+    const { tmdbKey } = getKeys();
+    console.log(`[imdb-search] tmdbKey extraído:`, tmdbKey ? 'OK' : 'UNDEFINED');
 
-    // Busca no IMDb (OMDb) - retorna 1 resultado exato ou nulo
-    const found = await omdbLookup({ nome, ano, tipo, apiKey: omdbKey });
+    // Busca no TMDb - retorna 1 resultado exato ou nulo
+    const found = await tmdbLookup({ nome, tipo, apiKey: tmdbKey, ano });
 
     if (!found) {
       return Response.json({ matches: [] });
