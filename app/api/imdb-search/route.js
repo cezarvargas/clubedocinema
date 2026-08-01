@@ -25,16 +25,20 @@ export async function POST(request) {
 
     // Carrega a planilha pra verificar duplicatas
     const sheet = await loadFromDropbox();
-    const existsInClub = findDuplicate(sheet, { nome: found.nome, ano: found.ano, tipo });
 
-    const matches = [{
-      imdbId: found.imdbId,
-      nome: found.nome,
-      ano: found.ano,
-      tipo,
-      existsInClub: !!existsInClub,
-      rowNumber: existsInClub?.rowNumber || null,
-    }];
+    // Se found é um array (múltiplos candidatos), processa cada um
+    const foundArray = Array.isArray(found) ? found : [found];
+    const matches = foundArray.map(f => {
+      const existsInClub = findDuplicate(sheet, { nome: f.nome, ano: f.ano, tipo });
+      return {
+        imdbId: f.imdbId,
+        nome: f.nome,
+        ano: f.ano,
+        tipo,
+        existsInClub: !!existsInClub,
+        rowNumber: existsInClub?.rowNumber || null,
+      };
+    });
 
     return Response.json({ matches });
   } catch (err) {
