@@ -150,7 +150,7 @@ function HomeScreen({ currentUser, goTo, onSignOut, onPickExisting }) {
         </div>
       </div>
       <div className="content">
-        <button className="cta-primary" onClick={() => goTo('sheet')}>📋 Ver planilha/avaliar</button>
+        <button className="cta-primary" onClick={() => goTo('sheet')}>📋 Ver filmes / avaliar</button>
         <button className="cta-secondary" onClick={() => goTo('search')}>🎬 Incluir novo filme ou série</button>
 
         <p className="section-label">Últimos lançamentos</p>
@@ -646,20 +646,20 @@ function SheetScreen({ currentUser, goTo, onPickExisting }) {
       <div className="back-row"><button className="back-btn" onClick={() => goTo('home')}>←</button></div>
       <div className="topbar" style={{ borderBottom: 'none', paddingTop: 12 }}>
         <p className="eyebrow">{view === 'fila' ? 'Para avaliar' : 'Todos os filmes'}</p>
-        <h1>{view === 'fila' ? `Filmes sem nota - ${currentUser}` : 'Ver planilha completa'}</h1>
+        <h1>{view === 'fila' ? `Filmes sem nota - ${currentUser}` : view === 'discutidos' ? 'Filmes Discutidos' : 'Ver filmes/séries'}</h1>
       </div>
       <div className="content">
         {/* Abas: Todos vs Fila */}
         <div className="filter-row" style={{ marginBottom: 12 }}>
-          <button className={`filter-chip${view === 'todos' ? ' active' : ''}`} onClick={() => { setView('todos'); setTipo('todos'); }}>Ver planilha</button>
-          <button className={`filter-chip${view === 'fila' ? ' active' : ''}`} onClick={() => setView('fila')}>Filmes sem nota - {currentUser}</button>
+          <button className={`filter-chip${view === 'todos' ? ' active' : ''}`} onClick={() => { setView('todos'); setTipo('todos'); }}>Todos</button>
+          <button className={`filter-chip${view === 'discutidos' ? ' active' : ''}`} onClick={() => setView('discutidos')}>Discutidos</button>
+          <button className={`filter-chip${view === 'fila' ? ' active' : ''}`} onClick={() => setView('fila')}>Sem nota - {currentUser}</button>
         </div>
 
         <input type="text" placeholder="Buscar título..." value={query} onChange={e => setQuery(e.target.value)} />
 
         {view === 'todos' && (
           <div className="filter-row">
-            <button className={`filter-chip${tipo === 'todos' ? ' active' : ''}`} onClick={() => pickFilter('todos')}>Todos</button>
             <button className={`filter-chip${tipo === 'F' ? ' active' : ''}`} onClick={() => pickFilter('F')}>Filmes</button>
             <button className={`filter-chip${tipo === 'S' ? ' active' : ''}`} onClick={() => pickFilter('S')}>Séries</button>
           </div>
@@ -706,7 +706,7 @@ function SheetScreen({ currentUser, goTo, onPickExisting }) {
                     </a>
                   ) : <div className="sheet-title unconfirmed">{m.nome}</div>}
                   <div className="sheet-meta">
-                    {typeLabel(m.tipo)} · {m.ano} · {m.votos} avaliações{metaExtra}
+                    {typeLabel(m.tipo)} · {m.ano} · {m.votos} aval.{m.discutido ? ' · D' : ''}{metaExtra}
                   </div>
                 </div>
                 <div className="sheet-avg">{bigNumber} <span className="chev">▾</span></div>
