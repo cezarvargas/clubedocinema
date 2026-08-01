@@ -676,13 +676,25 @@ function SheetScreen({ currentUser, goTo, onPickExisting }) {
         {loading && <p style={{ color: 'var(--muted)' }}>Carregando...</p>}
 
         {items.map((m, i) => {
-          // Na fila, sempre mostra nota IMDb; nos Todos, mostra conforme a ordenação
-          const bigNumber = view === 'fila'
-            ? (m.imdbNota ? formatNota(m.imdbNota) : '—')
-            : (sort === 'imdb' && m.imdbNota ? formatNota(m.imdbNota) : (m.mediaPond != null ? formatNota(m.mediaPond) : '—'));
-          const metaExtra = view === 'fila'
-            ? (m.mediaPond != null ? ` · média pond. ${formatNota(m.mediaPond)}` : '')
-            : (sort === 'imdb' ? (m.mediaPond != null ? ` · média pond. ${formatNota(m.mediaPond)}` : '') : (m.imdbNota ? ` · IMDb ${formatNota(m.imdbNota)}` : ''));
+          const hasMultipleVotes = m.votos > 1;
+
+          // Número grande conforme a ordenação
+          let bigNumber;
+          let metaExtra = '';
+
+          if (view === 'fila') {
+            // Fila: número é IMDb
+            bigNumber = m.imdbNota ? formatNota(m.imdbNota) : '—';
+            metaExtra = m.mediaPond != null ? ` · média pond. ${formatNota(m.mediaPond)}` : '';
+          } else if (sort === 'media') {
+            // Ordenado por Média Ponderada: número é Média, meta é IMDb (se votos > 1)
+            bigNumber = m.mediaPond != null ? formatNota(m.mediaPond) : '—';
+            metaExtra = hasMultipleVotes && m.imdbNota ? ` · IMDb ${formatNota(m.imdbNota)}` : '';
+          } else if (sort === 'imdb' || view === 'todos') {
+            // Ordenado por IMDb ou view normal: número é IMDb, meta é Média
+            bigNumber = m.imdbNota ? formatNota(m.imdbNota) : '—';
+            metaExtra = sort === 'nome' ? '' : (m.mediaPond != null ? ` · média pond. ${formatNota(m.mediaPond)}` : '');
+          }
           return (
             <div key={m.rowNumber} className="sheet-row">
               <div className="sheet-row-top" onClick={() => setOpenRow(openRow === i ? null : i)}>
