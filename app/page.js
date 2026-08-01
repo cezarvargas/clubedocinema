@@ -110,7 +110,7 @@ export default function App() {
       {screen === 'confirm' && confirmData && (
         <ConfirmScreen data={confirmData} goTo={goTo} />
       )}
-      {screen === 'sheet' && <SheetScreen goTo={goTo} onPickExisting={(m) => { setSelected(m); goTo('rate'); }} />}
+      {screen === 'sheet' && <SheetScreen currentUser={currentUser} goTo={goTo} onPickExisting={(m) => { setSelected(m); goTo('rate'); }} />}
     </div>
   );
 }
@@ -613,10 +613,11 @@ function ConfirmScreen({ data, goTo }) {
 // ---------------------------------------------------------------------
 // SHEET (Ver planilha completa)
 // ---------------------------------------------------------------------
-function SheetScreen({ goTo, onPickExisting }) {
+function SheetScreen({ currentUser, goTo, onPickExisting }) {
   const [query, setQuery] = useState('');
   const [tipo, setTipo] = useState('todos');
   const [sort, setSort] = useState('nome');
+  const [view, setView] = useState('todos'); // 'todos' ou 'fila'
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [openRow, setOpenRow] = useState(null);
@@ -624,12 +625,19 @@ function SheetScreen({ goTo, onPickExisting }) {
   useEffect(() => {
     setLoading(true);
     const t = setTimeout(() => {
-      api(`/api/sheet?q=${encodeURIComponent(query)}&tipo=${tipo}&sort=${sort}`)
+      const params = new URLSearchParams({
+        q: query,
+        tipo: view === 'fila' ? 'todos' : tipo, // ignora filtro tipo na fila
+        sort: view === 'fila' ? 'imdb' : sort, // força ordenar por IMDb na fila
+        view: view, // passa o tipo de view
+        currentUser: currentUser || ''
+      });
+      api(`/api/sheet?${params.toString()}`)
         .then(({ data }) => setItems(data.items || []))
         .finally(() => setLoading(false));
     }, 200);
     return () => clearTimeout(t);
-  }, [query, tipo, sort]);
+  }, [query, tipo, sort, view, currentUser]);
 
   function pickFilter(f) { setTipo(f); setSort('nome'); }
 
@@ -637,31 +645,44 @@ function SheetScreen({ goTo, onPickExisting }) {
     <div className="screen">
       <div className="back-row"><button className="back-btn" onClick={() => goTo('home')}>←</button></div>
       <div className="topbar" style={{ borderBottom: 'none', paddingTop: 12 }}>
-        <p className="eyebrow">Todos os filmes</p>
-        <h1>Ver planilha completa</h1>
+        <p className="eyebrow">{view === 'fila' ? 'Para avaliar' : 'Todos os filmes'}</p>
+        <h1>{view === 'fila' ? 'Fila de avaliação' : 'Ver planilha completa'}</h1>
       </div>
       <div className="content">
+        {/* Abas: Todos vs Fila */}
+        <div className="filter-row" style={{ marginBottom: 12 }}>
+          <button className={`filter-chip${view === 'todos' ? ' active' : ''}`} onClick={() => { setView('todos'); setTipo('todos'); }}>Ver planilha</button>
+          <button className={`filter-chip${view === 'fila' ? ' active' : ''}`} onClick={() => setView('fila')}>Fila ({currentUser})</button>
+        </div>
+
         <input type="text" placeholder="Buscar título..." value={query} onChange={e => setQuery(e.target.value)} />
-        <div className="filter-row">
-          <button className={`filter-chip${tipo === 'todos' ? ' active' : ''}`} onClick={() => pickFilter('todos')}>Todos</button>
-          <button className={`filter-chip${tipo === 'F' ? ' active' : ''}`} onClick={() => pickFilter('F')}>Filmes</button>
-          <button className={`filter-chip${tipo === 'S' ? ' active' : ''}`} onClick={() => pickFilter('S')}>Séries</button>
-        </div>
-        <div className="filter-row" style={{ marginTop: 8 }}>
-          <span style={{ color: 'var(--muted)', fontSize: 11, alignSelf: 'center' }}>ORDENAR:</span>
-          <button className={`filter-chip${sort === 'imdb' ? ' active' : ''}`} onClick={() => setSort('imdb')}>Nota IMDb</button>
-          <button className={`filter-chip${sort === 'media' ? ' active' : ''}`} onClick={() => setSort('media')}>Média Pond.</button>
-        </div>
+
+        {view === 'todos' && (
+          <div className="filter-row">
+            <button className={`filter-chip${tipo === 'todos' ? ' active' : ''}`} onClick={() => pickFilter('todos')}>Todos</button>
+            <button className={`filter-chip${tipo === 'F' ? ' active' : ''}`} onClick={() => pickFilter('F')}>Filmes</button>
+            <button className={`filter-chip${tipo === 'S' ? ' active' : ''}`} onClick={() => pickFilter('S')}>Séries</button>
+          </div>
+        )}
+
+        {view === 'todos' && (
+          <div className="filter-row" style={{ marginTop: 8 }}>
+            <span style={{ color: 'var(--muted)', fontSize: 11, alignSelf: 'center' }}>ORDENAR:</span>
+            <button className={`filter-chip${sort === 'imdb' ? ' active' : ''}`} onClick={() => setSort('imdb')}>Nota IMDb</button>
+            <button className={`filter-chip${sort === 'media' ? ' active' : ''}`} onClick={() => setSort('media')}>Média Pond.</button>
+          </div>
+        )}
 
         {loading && <p style={{ color: 'var(--muted)' }}>Carregando...</p>}
 
         {items.map((m, i) => {
-          const bigNumber = sort === 'imdb' && m.imdbNota
-            ? formatNota(m.imdbNota)
-            : (m.mediaPond != null ? formatNota(m.mediaPond) : '—');
-          const metaExtra = sort === 'imdb'
+          // Na fila, sempre mostra nota IMDb; nos Todos, mostra conforme a ordenação
+          const bigNumber = view === 'fila'
+            ? (m.imdbNota ? formatNota(m.imdbNota) : '—')
+            : (sort === 'imdb' && m.imdbNota ? formatNota(m.imdbNota) : (m.mediaPond != null ? formatNota(m.mediaPond) : '—'));
+          const metaExtra = view === 'fila'
             ? (m.mediaPond != null ? ` · média pond. ${formatNota(m.mediaPond)}` : '')
-            : (m.imdbNota ? ` · IMDb ${formatNota(m.imdbNota)}` : '');
+            : (sort === 'imdb' ? (m.mediaPond != null ? ` · média pond. ${formatNota(m.mediaPond)}` : '') : (m.imdbNota ? ` · IMDb ${formatNota(m.imdbNota)}` : ''));
           return (
             <div key={m.rowNumber} className="sheet-row">
               <div className="sheet-row-top" onClick={() => setOpenRow(openRow === i ? null : i)}>
