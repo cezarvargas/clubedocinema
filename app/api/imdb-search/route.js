@@ -35,6 +35,7 @@ export async function POST(request) {
         nome: f.nome,
         ano: f.ano,
         tipo,
+        imdbRating: f.imdbRating || null,  // Nota já buscada na Tela 1
         existsInClub: !!existsInClub,
         rowNumber: existsInClub?.rowNumber || null,
       };

@@ -245,8 +245,8 @@ function SearchScreen({ currentUser, goTo, onPickExisting, onNotFound, setPrefil
       // Se já existe, vai avaliar
       onPickExisting({ rowNumber: filme.rowNumber, nome: filme.nome, tipo: filme.tipo, ano: filme.ano, imdbLink: `https://www.imdb.com/title/${filme.imdbId}/` });
     } else {
-      // Se não existe, vai cadastrar com dados do IMDb preenchidos
-      setPrefillData({ nome: filme.nome, ano: parseInt(filme.ano, 10), tipo: filme.tipo, imdbId: filme.imdbId });
+      // Se não existe, vai cadastrar com dados do IMDb preenchidos (já validados na Tela 1)
+      setPrefillData({ nome: filme.nome, ano: parseInt(filme.ano, 10), tipo: filme.tipo, imdbId: filme.imdbId, imdbRating: filme.imdbRating });
       goTo('new');
     }
   }
@@ -304,7 +304,7 @@ function SearchScreen({ currentUser, goTo, onPickExisting, onNotFound, setPrefil
                     {m.nome} <span style={{ fontSize: 11 }}>↗</span>
                   </a>
                   <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>
-                    {typeLabel(m.tipo)} · {m.ano} {m.existsInClub && '· Já no clube'}
+                    {typeLabel(m.tipo)} · {m.ano} {m.existsInClub && '· Já no clube'} {m.imdbRating && `· IMDb ${m.imdbRating}`}
                   </div>
                 </div>
                 <button className="link-btn" onClick={() => irParaCadastro(m)} style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
@@ -328,7 +328,7 @@ function SearchScreen({ currentUser, goTo, onPickExisting, onNotFound, setPrefil
             <button className="link-btn" onClick={() => {
               // Não encontrou nada, cadastra sem imdbId
               // Usa imdbId: null pra indicar "já validado, não encontrado"
-              setPrefillData({ nome: nome.trim(), ano: parseInt(ano, 10), tipo, imdbId: null });
+              setPrefillData({ nome: nome.trim(), ano: parseInt(ano, 10), tipo, imdbId: null, imdbRating: null });
               onNotFound(nome.trim());
             }} style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
               Cadastrar como novo sem IMDb
@@ -442,7 +442,7 @@ function NewScreen({ currentUser, prefill, prefillData, goTo, onDone }) {
       const { status, data } = await api('/api/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nome, tipo, ano: parseInt(ano, 10), ondeVer, pessoa: currentUser, nota, imdbId: prefillData?.imdbId }),
+        body: JSON.stringify({ nome, tipo, ano: parseInt(ano, 10), ondeVer, pessoa: currentUser, nota, imdbId: prefillData?.imdbId, imdbRating: prefillData?.imdbRating }),
       });
       if (status === 409) {
         setDupInfo(data.existing);
@@ -646,13 +646,13 @@ function SheetScreen({ currentUser, goTo, onPickExisting }) {
       <div className="back-row"><button className="back-btn" onClick={() => goTo('home')}>←</button></div>
       <div className="topbar" style={{ borderBottom: 'none', paddingTop: 12 }}>
         <p className="eyebrow">{view === 'fila' ? 'Para avaliar' : 'Todos os filmes'}</p>
-        <h1>{view === 'fila' ? 'Fila de avaliação' : 'Ver planilha completa'}</h1>
+        <h1>{view === 'fila' ? `Filmes sem nota - ${currentUser}` : 'Ver planilha completa'}</h1>
       </div>
       <div className="content">
         {/* Abas: Todos vs Fila */}
         <div className="filter-row" style={{ marginBottom: 12 }}>
           <button className={`filter-chip${view === 'todos' ? ' active' : ''}`} onClick={() => { setView('todos'); setTipo('todos'); }}>Ver planilha</button>
-          <button className={`filter-chip${view === 'fila' ? ' active' : ''}`} onClick={() => setView('fila')}>Fila ({currentUser})</button>
+          <button className={`filter-chip${view === 'fila' ? ' active' : ''}`} onClick={() => setView('fila')}>Filmes sem nota - {currentUser}</button>
         </div>
 
         <input type="text" placeholder="Buscar título..." value={query} onChange={e => setQuery(e.target.value)} />
@@ -683,8 +683,8 @@ function SheetScreen({ currentUser, goTo, onPickExisting }) {
           let metaExtra = '';
 
           if (view === 'fila') {
-            // Fila: número é IMDb
-            bigNumber = m.imdbNota ? formatNota(m.imdbNota) : '—';
+            // Fila: número é IMDb, mas só mostra se votos > 1 (igual a "Ordenar por IMDb")
+            bigNumber = hasMultipleVotes && m.imdbNota ? formatNota(m.imdbNota) : '—';
             metaExtra = m.mediaPond != null ? ` · média pond. ${formatNota(m.mediaPond)}` : '';
           } else if (sort === 'media') {
             // Ordenado por Média Ponderada: número é Média, meta é IMDb (se votos > 1)

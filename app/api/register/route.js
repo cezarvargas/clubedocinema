@@ -11,7 +11,7 @@ export async function POST(request) {
 
     const { tmdbKey, omdbKey } = getKeys();
     const sheet = await loadFromDropbox();
-    const result = await registerAction(sheet, { nome, tipo, ano, ondeVer, pessoa, nota, tmdbKey, omdbKey, imdbId: body.imdbId });
+    const result = await registerAction(sheet, { nome, tipo, ano, ondeVer, pessoa, nota, tmdbKey, omdbKey, imdbId: body.imdbId, imdbRating: body.imdbRating });
 
     if (result.error === 'duplicate') {
       return Response.json(result, { status: 409 }); // 409 Conflict
