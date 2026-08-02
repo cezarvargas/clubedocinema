@@ -116,8 +116,9 @@ export default function App() {
 }
 
 function buildConfirm(mensagem) {
-  const waLink = `https://wa.me/?text=${encodeURIComponent(mensagem)}`;
-  return { mensagem, waLink };
+  // Link do grupo de teste no WhatsApp
+  const waGroupLink = 'https://chat.whatsapp.com/DZoqz3YTez5JoqSTP9gflb';
+  return { mensagem, waLink: waGroupLink };
 }
 
 function Filmstrip() { return <div className="filmstrip" />; }
@@ -601,6 +602,7 @@ function ConfirmScreen({ data, goTo }) {
           </div>
         </div>
         <a className="cta-wa" href={data.waLink} target="_blank" rel="noopener"
+           onClick={() => navigator.clipboard.writeText(data.mensagem)}
            style={{ display: 'flex', textDecoration: 'none' }}>
           📲 Compartilhar no grupo
         </a>
@@ -652,7 +654,7 @@ function SheetScreen({ currentUser, goTo, onPickExisting }) {
         {/* Abas: Todos vs Fila */}
         <div className="filter-row" style={{ marginBottom: 12 }}>
           <button className={`filter-chip${view === 'todos' ? ' active' : ''}`} onClick={() => { setView('todos'); setTipo('todos'); }}>Todos</button>
-          <button className={`filter-chip${view === 'discutidos' ? ' active' : ''}`} onClick={() => setView('discutidos')}>Discutidos</button>
+          <button className={`filter-chip${view === 'discutidos' ? ' active' : ''}`} onClick={() => { setView('discutidos'); setTipo('todos'); }}>Discutidos</button>
           <button className={`filter-chip${view === 'fila' ? ' active' : ''}`} onClick={() => setView('fila')}>Sem nota - {currentUser}</button>
         </div>
 
