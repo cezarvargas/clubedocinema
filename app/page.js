@@ -11,7 +11,21 @@ const AVATAR_COLORS = [
   '#C9A24B', '#7EA35A', '#5ED9B8', '#E8A93C', '#D98A93', '#E8B98C',
   '#8AB4E8', '#D98AC9', '#C9E85E', '#E85E5E', '#5EC9E8', '#B98CE8',
 ];
-function avatarColor(index) { return AVATAR_COLORS[index % AVATAR_COLORS.length]; }
+const PEOPLE_COLORS = {
+  'Carmen': '#99CCFF',
+  'Cezar': '#92D050',
+  'Chris': '#99FFCC',
+  'Cris': '#FFC000',
+  'Eliane': '#DA9694',
+  'Fer e Vera': '#FDE9D9',
+  'Helena': '#FF99FF',
+  'Ivanete': '#FF0000',
+  'João': '#66FF33',
+  'M.Inês': '#C4BD97',
+  'Tereza': '#C5D9F1',
+  'Zaninha': '#F79646',
+};
+function avatarColor(name) { return PEOPLE_COLORS[name] || AVATAR_COLORS[Object.keys(PEOPLE_COLORS).indexOf(name) % AVATAR_COLORS.length]; }
 
 function typeLabel(t) { return (TYPE_INFO[(t || '').toUpperCase()] || {}).label || t; }
 function formatNota(n) { return Number(n).toFixed(1).replace('.', ','); }
@@ -63,9 +77,9 @@ export default function App() {
             )}
             {loadingPeople && <p style={{ color: 'var(--muted)' }}>Carregando...</p>}
             <div className="name-grid">
-              {people.map((name, i) => (
+              {people.map((name) => (
                 <button key={name} className="name-chip" onClick={() => login(name)}>
-                  <span className="avatar-dot" style={{ background: avatarColor(i) }}>{name[0]}</span>{name}
+                  <span className="avatar-dot" style={{ background: avatarColor(name) }}>{name[0]}</span>{name}
                 </button>
               ))}
             </div>
