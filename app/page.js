@@ -21,7 +21,9 @@ const PEOPLE_COLORS = {
   'Helena': '#FF99FF',
   'Ivanete': '#FF0000',
   'João': '#66FF33',
-  'M.Inês': '#C4BD97',
+  'M. Ignez': '#C4BD97',
+  'M.Ignez': '#C4BD97',
+  'M Ignez': '#C4BD97',
   'Tereza': '#C5D9F1',
   'Zaninha': '#F79646',
 };
