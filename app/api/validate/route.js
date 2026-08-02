@@ -9,8 +9,13 @@ export async function POST(request) {
       return Response.json({ error: 'Campos obrigatórios: nome, tipo, ano.' }, { status: 400 });
     }
 
+<<<<<<< HEAD
     const { omdbKey } = getKeys();
     const matched = await matchTitle({ nome, ano, tipo, omdbKey });
+=======
+    const { omdbKey, tmdbKey } = getKeys();
+    const matched = await matchTitle({ nome, ano, tipo, omdbKey, tmdbKey });
+>>>>>>> 7db19870b8d151410cf15ad034d7a28d6a1df671
 
     return Response.json({
       found: !!matched,
