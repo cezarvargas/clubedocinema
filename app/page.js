@@ -132,8 +132,8 @@ export default function App() {
 }
 
 function buildConfirm(mensagem) {
-  // Link do grupo de teste no WhatsApp
-  const waGroupLink = 'https://chat.whatsapp.com/DZoqz3YTez5JoqSTP9gflb';
+  // Link do grupo Clube do Cinema no WhatsApp
+  const waGroupLink = 'https://chat.whatsapp.com/EifUcKM9bwUDELnzn93m4f';
   return { mensagem, waLink: waGroupLink };
 }
 
