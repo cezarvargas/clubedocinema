@@ -636,7 +636,7 @@ function SheetScreen({ currentUser, goTo, onPickExisting }) {
   const [query, setQuery] = useState('');
   const [tipo, setTipo] = useState('todos');
   const [sort, setSort] = useState('nome');
-  const [view, setView] = useState('todos'); // 'todos' ou 'fila'
+  const [filtroEspecial, setFiltroEspecial] = useState('todos'); // 'todos', 'discutidos', 'fila'
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [openRow, setOpenRow] = useState(null);
@@ -646,9 +646,9 @@ function SheetScreen({ currentUser, goTo, onPickExisting }) {
     const t = setTimeout(() => {
       const params = new URLSearchParams({
         q: query,
-        tipo: view === 'fila' ? 'todos' : tipo, // ignora filtro tipo na fila
-        sort: view === 'fila' ? 'imdb' : sort, // força ordenar por IMDb na fila
-        view: view, // passa o tipo de view
+        tipo: tipo, // respeita a seleção de tipo
+        sort: sort, // respeita a seleção de ordenação
+        view: filtroEspecial, // passa o tipo de filtro especial
         currentUser: currentUser || ''
       });
       api(`/api/sheet?${params.toString()}`)
@@ -656,41 +656,47 @@ function SheetScreen({ currentUser, goTo, onPickExisting }) {
         .finally(() => setLoading(false));
     }, 200);
     return () => clearTimeout(t);
-  }, [query, tipo, sort, view, currentUser]);
+  }, [query, tipo, sort, filtroEspecial, currentUser]);
 
   function pickFilter(f) { setTipo(f); setSort('nome'); }
+  function resetarFiltros() { setFiltroEspecial('todos'); setTipo('todos'); setSort('nome'); setQuery(''); }
+  function mudarFiltroEspecial(filtro) { setFiltroEspecial(filtro); setTipo('todos'); setSort('nome'); }
 
   return (
     <div className="screen">
       <div className="back-row"><button className="back-btn" onClick={() => goTo('home')}>←</button></div>
       <div className="topbar" style={{ borderBottom: 'none', paddingTop: 12 }}>
-        <p className="eyebrow">{view === 'fila' ? 'Para avaliar' : 'Todos os filmes'}</p>
-        <h1>{view === 'fila' ? `Filmes sem nota - ${currentUser}` : view === 'discutidos' ? 'Filmes Discutidos' : 'Ver filmes/séries'}</h1>
+        <h1>Ver filmes/avaliar</h1>
       </div>
       <div className="content">
-        {/* Abas: Todos vs Fila */}
-        <div className="filter-row" style={{ marginBottom: 12 }}>
-          <button className={`filter-chip${view === 'todos' ? ' active' : ''}`} onClick={() => { setView('todos'); setTipo('todos'); }}>Todos</button>
-          <button className={`filter-chip${view === 'discutidos' ? ' active' : ''}`} onClick={() => { setView('discutidos'); setTipo('todos'); }}>Discutidos</button>
-          <button className={`filter-chip${view === 'fila' ? ' active' : ''}`} onClick={() => setView('fila')}>Sem nota - {currentUser}</button>
-        </div>
+        {/* Container com borda para os filtros */}
+        <div style={{ border: '2px solid #C9A24B', borderRadius: 8, padding: 12, marginBottom: 16, boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.2)' }}>
+          {/* Filtro especial: Todos vs Discutidos vs Fila */}
+          <div className="filter-row" style={{ marginBottom: 12, justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button className={`filter-chip${filtroEspecial === 'todos' ? ' active' : ''}`} onClick={() => mudarFiltroEspecial('todos')}>Todos</button>
+              <button className={`filter-chip${filtroEspecial === 'discutidos' ? ' active' : ''}`} onClick={() => mudarFiltroEspecial('discutidos')}>Discutidos</button>
+              <button className={`filter-chip${filtroEspecial === 'fila' ? ' active' : ''}`} onClick={() => mudarFiltroEspecial('fila')}>Sem nota - {currentUser}</button>
+            </div>
+          </div>
 
-        <input type="text" placeholder="Buscar título..." value={query} onChange={e => setQuery(e.target.value)} />
+          <input type="text" placeholder="Buscar título..." value={query} onChange={e => setQuery(e.target.value)} />
 
-        {view === 'todos' && (
+          {/* Filtro de tipo - sempre visível */}
           <div className="filter-row">
             <button className={`filter-chip${tipo === 'F' ? ' active' : ''}`} onClick={() => pickFilter('F')}>Filmes</button>
+            <button className={`filter-chip${tipo === 'FD' ? ' active' : ''}`} onClick={() => pickFilter('FD')}>Filmes doc.</button>
             <button className={`filter-chip${tipo === 'S' ? ' active' : ''}`} onClick={() => pickFilter('S')}>Séries</button>
+            <button className={`filter-chip${tipo === 'MS' ? ' active' : ''}`} onClick={() => pickFilter('MS')}>Miniséries</button>
           </div>
-        )}
 
-        {view === 'todos' && (
+          {/* Ordenar - sempre visível */}
           <div className="filter-row" style={{ marginTop: 8 }}>
             <span style={{ color: 'var(--muted)', fontSize: 11, alignSelf: 'center' }}>ORDENAR:</span>
             <button className={`filter-chip${sort === 'imdb' ? ' active' : ''}`} onClick={() => setSort('imdb')}>Nota IMDb</button>
             <button className={`filter-chip${sort === 'media' ? ' active' : ''}`} onClick={() => setSort('media')}>Média Pond.</button>
           </div>
-        )}
+        </div>
 
         {loading && <p style={{ color: 'var(--muted)' }}>Carregando...</p>}
 
@@ -701,18 +707,18 @@ function SheetScreen({ currentUser, goTo, onPickExisting }) {
           let bigNumber;
           let metaExtra = '';
 
-          if (view === 'fila') {
-            // Fila: número é IMDb, mas só mostra se votos > 1 (igual a "Ordenar por IMDb")
-            bigNumber = hasMultipleVotes && m.imdbNota ? formatNota(m.imdbNota) : '—';
-            metaExtra = m.mediaPond != null ? ` · média pond. ${formatNota(m.mediaPond)}` : '';
-          } else if (sort === 'media') {
+          if (sort === 'media') {
             // Ordenado por Média Ponderada: número é Média, meta é IMDb (se votos > 1)
             bigNumber = m.mediaPond != null ? formatNota(m.mediaPond) : '—';
             metaExtra = hasMultipleVotes && m.imdbNota ? ` · IMDb ${formatNota(m.imdbNota)}` : '';
-          } else if (sort === 'imdb' || view === 'todos') {
-            // Ordenado por IMDb ou view normal: número é IMDb, meta é Média
+          } else if (sort === 'imdb') {
+            // Ordenado por IMDb: número é IMDb, meta é Média
             bigNumber = m.imdbNota ? formatNota(m.imdbNota) : '—';
-            metaExtra = sort === 'nome' ? '' : (m.mediaPond != null ? ` · média pond. ${formatNota(m.mediaPond)}` : '');
+            metaExtra = m.mediaPond != null ? ` · média pond. ${formatNota(m.mediaPond)}` : '';
+          } else {
+            // Padrão (nome ou outro): número é IMDb, meta é Média Pond.
+            bigNumber = m.imdbNota ? formatNota(m.imdbNota) : '—';
+            metaExtra = m.mediaPond != null ? ` · média pond. ${formatNota(m.mediaPond)}` : '';
           }
           return (
             <div key={m.rowNumber} className="sheet-row">
