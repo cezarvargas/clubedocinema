@@ -271,10 +271,9 @@ function SearchScreen({ currentUser, goTo, onPickExisting, onNotFound, setPrefil
 
   return (
     <div className="screen">
-      <div className="back-row"><button className="back-btn" onClick={() => goTo('home')}>←</button></div>
-      <div className="topbar" style={{ borderBottom: 'none', paddingTop: 12 }}>
-        <p className="eyebrow">Nova avaliação</p>
-        <h1>O que você viu?</h1>
+      <div className="topbar" style={{ borderBottom: 'none', paddingTop: 8, paddingBottom: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+        <button className="back-btn" onClick={() => goTo('home')} style={{ margin: 0, padding: 4, position: 'absolute', left: 12 }}>←</button>
+        <h1 style={{ margin: 0 }}>O que você viu?</h1>
       </div>
       <div className="content">
         <div className="field">
@@ -553,10 +552,9 @@ function NewScreen({ currentUser, prefill, prefillData, goTo, onDone }) {
 
   return (
     <div className="screen">
-      <div className="back-row"><button className="back-btn" onClick={() => goTo('search')}>←</button></div>
-      <div className="topbar" style={{ borderBottom: 'none', paddingTop: 12 }}>
-        <p className="eyebrow">Novo no clube</p>
-        <h1>Preencha os dados</h1>
+      <div className="topbar" style={{ borderBottom: 'none', paddingTop: 8, paddingBottom: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+        <button className="back-btn" onClick={() => goTo('search')} style={{ margin: 0, padding: 4, position: 'absolute', left: 12 }}>←</button>
+        <h1 style={{ margin: 0 }}>Preencha os dados</h1>
       </div>
       <div className="content">
         <div className="field">
@@ -664,9 +662,9 @@ function SheetScreen({ currentUser, goTo, onPickExisting }) {
 
   return (
     <div className="screen">
-      <div className="back-row"><button className="back-btn" onClick={() => goTo('home')}>←</button></div>
-      <div className="topbar" style={{ borderBottom: 'none', paddingTop: 12 }}>
-        <h1>Ver filmes/avaliar</h1>
+      <div className="topbar" style={{ borderBottom: 'none', paddingTop: 12, paddingBottom: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+        <button className="back-btn" onClick={() => goTo('home')} style={{ margin: 0, padding: 4, position: 'absolute', left: 12 }}>←</button>
+        <h1 style={{ margin: 0 }}>Ver filmes/avaliar</h1>
       </div>
       <div className="content">
         {/* Container com borda para os filtros */}
