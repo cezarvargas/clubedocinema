@@ -602,6 +602,33 @@ function NewScreen({ currentUser, prefill, prefillData, goTo, onDone }) {
 // CONFIRM (mensagem pronta pro WhatsApp)
 // -------------------...
 function ConfirmScreen({ data, goTo }) {
+  function handleShareClick(event) {
+    event.preventDefault();
+    navigator.clipboard.writeText(data.mensagem);
+
+    let appOpened = false;
+
+    // Se app abrir, navegador perde foco
+    const focusHandler = () => {
+      appOpened = true;
+      window.removeEventListener('focus', focusHandler);
+    };
+    window.addEventListener('focus', focusHandler);
+
+    // Fallback: se app não abrir em 1.5s
+    const fallbackTimer = setTimeout(() => {
+      window.removeEventListener('focus', focusHandler);
+      if (!appOpened) {
+        // App não abriu, abre web direto
+        window.location.href = 'https://web.whatsapp.com';
+      }
+      clearTimeout(fallbackTimer);
+    }, 1500);
+
+    // Tenta abrir o app
+    window.location.href = data.waLink;
+  }
+
   return (
     <div className="screen">
       <div className="content" style={{ textAlign: 'center', paddingTop: 20 }}>
@@ -616,11 +643,9 @@ function ConfirmScreen({ data, goTo }) {
             <span className="wa-time">agora</span>
           </div>
         </div>
-        <a className="cta-wa" href={data.waLink} target="_blank" rel="noopener"
-           onClick={() => navigator.clipboard.writeText(data.mensagem)}
-           style={{ display: 'flex', textDecoration: 'none' }}>
+        <button className="cta-wa" onClick={handleShareClick}>
           📲 Compartilhar no grupo
-        </a>
+        </button>
         <button className="link-btn" onClick={() => goTo('home')}>Pular, voltar ao início</button>
       </div>
     </div>
