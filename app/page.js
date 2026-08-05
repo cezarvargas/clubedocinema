@@ -17,7 +17,7 @@ const PEOPLE_COLORS = {
   'Chris': '#99FFCC',
   'Cris': '#FFC000',
   'Eliane': '#DA9694',
-  'Fer e Vera': '#FDE9D9',
+  'Fernando': '#948A54',
   'Helena': '#FF99FF',
   'Ivanete': '#FF0000',
   'João': '#66FF33',
@@ -25,6 +25,7 @@ const PEOPLE_COLORS = {
   'M.Ignez': '#C4BD97',
   'M Ignez': '#C4BD97',
   'Tereza': '#C5D9F1',
+  'Vera': '#FDE9D9',
   'Zaninha': '#F79646',
 };
 function avatarColor(name) { return PEOPLE_COLORS[name] || AVATAR_COLORS[Object.keys(PEOPLE_COLORS).indexOf(name) % AVATAR_COLORS.length]; }
@@ -404,7 +405,7 @@ function RateScreen({ currentUser, match, goTo, onDone }) {
         <div className="field">
           <label>SUA NOTA</label>
           <div className="score-display"><div className="score-num">{formatNota(nota)}</div></div>
-          <input type="range" min="0" max="5" step="0.5" value={nota} onChange={e => setNota(parseFloat(e.target.value))} />
+          <input type="range" min="0" max="10" step="0.5" value={nota} onChange={e => setNota(parseFloat(e.target.value))} />
         </div>
 
         {error && <div className="status-banner status-error" style={{ display: 'block' }}>{error}</div>}
@@ -586,7 +587,7 @@ function NewScreen({ currentUser, prefill, prefillData, goTo, onDone }) {
         <div className="field">
           <label>SUA NOTA</label>
           <div className="score-display"><div className="score-num">{formatNota(nota)}</div></div>
-          <input type="range" min="0" max="5" step="0.5" value={nota} onChange={e => setNota(parseFloat(e.target.value))} />
+          <input type="range" min="0" max="10" step="0.5" value={nota} onChange={e => setNota(parseFloat(e.target.value))} />
         </div>
 
         {errorInfo && <div className="status-banner status-error" style={{ display: 'block' }}>{errorInfo}</div>}
