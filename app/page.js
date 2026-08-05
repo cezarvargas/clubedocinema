@@ -207,13 +207,24 @@ function HomeScreen({ currentUser, goTo, onSignOut, onPickExisting }) {
                 </div>
               ))}
               {openIndex === i && onPickExisting && (
-                <button className="sheet-avaliar-btn" onClick={async () => {
-                  const { data } = await api(`/api/search?q=${encodeURIComponent(r.nome || r.titulo)}&user=${encodeURIComponent(currentUser)}`);
-                  const match = data.matches?.[0];
-                  if (match) onPickExisting(match);
-                }}>
-                  AVALIAR
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', width: '100%', gap: 12 }}>
+                  <button className="sheet-avaliar-btn" onClick={async () => {
+                    const { data } = await api(`/api/search?q=${encodeURIComponent(r.nome || r.titulo)}&user=${encodeURIComponent(currentUser)}`);
+                    const match = data.matches?.[0];
+                    if (match) onPickExisting(match);
+                  }}>
+                    AVALIAR
+                  </button>
+                  <div style={{ flex: 1 }} />
+                  <a href={`https://www.justwatch.com/br/busca?q=${encodeURIComponent(r.nome || r.titulo)}`}
+                     target="_blank"
+                     rel="noopener"
+                     style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', padding: '3px 8px', borderRadius: 16, backgroundColor: '#4A90E2', color: '#fff', fontSize: 10, fontWeight: 500, cursor: 'pointer', border: 'none', transition: 'opacity 0.2s' }}
+                     onMouseEnter={(e) => e.target.style.opacity = 0.8}
+                     onMouseLeave={(e) => e.target.style.opacity = 1}>
+                    JUSTWATCH
+                  </a>
+                </div>
               )}
             </div>
           </div>
@@ -695,12 +706,13 @@ function SheetScreen({ currentUser, goTo, onPickExisting }) {
       <div className="content">
         {/* Container com borda para os filtros */}
         <div style={{ border: '2px solid #C9A24B', borderRadius: 8, padding: 12, marginBottom: 16, boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.2)' }}>
-          {/* Filtro especial: Todos vs Discutidos vs Fila */}
+          {/* Filtro especial: Todos vs Discutidos vs Fila vs Com nota */}
           <div className="filter-row" style={{ marginBottom: 12, justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', gap: 8 }}>
               <button className={`filter-chip${filtroEspecial === 'todos' ? ' active' : ''}`} onClick={() => mudarFiltroEspecial('todos')}>Todos</button>
               <button className={`filter-chip${filtroEspecial === 'discutidos' ? ' active' : ''}`} onClick={() => mudarFiltroEspecial('discutidos')}>Discutidos</button>
               <button className={`filter-chip${filtroEspecial === 'fila' ? ' active' : ''}`} onClick={() => mudarFiltroEspecial('fila')}>Sem nota - {currentUser}</button>
+              <button className={`filter-chip${filtroEspecial === 'comNota' ? ' active' : ''}`} onClick={() => mudarFiltroEspecial('comNota')}>Com nota - {currentUser}</button>
             </div>
           </div>
 
@@ -767,9 +779,20 @@ function SheetScreen({ currentUser, goTo, onPickExisting }) {
                   </div>
                 ))}
                 {openRow === i && onPickExisting && (
-                  <button className="sheet-avaliar-btn" onClick={() => onPickExisting(m)}>
-                    AVALIAR
-                  </button>
+                  <div style={{ display: 'flex', alignItems: 'center', width: '100%', gap: 12 }}>
+                    <button className="sheet-avaliar-btn" onClick={() => onPickExisting(m)}>
+                      AVALIAR
+                    </button>
+                    <div style={{ flex: 1 }} />
+                    <a href={`https://www.justwatch.com/br/busca?q=${encodeURIComponent(m.nome)}`}
+                       target="_blank"
+                       rel="noopener"
+                       style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', padding: '3px 8px', borderRadius: 16, backgroundColor: '#4A90E2', color: '#fff', fontSize: 10, fontWeight: 500, cursor: 'pointer', border: 'none', transition: 'opacity 0.2s' }}
+                       onMouseEnter={(e) => e.target.style.opacity = 0.8}
+                       onMouseLeave={(e) => e.target.style.opacity = 1}>
+                      JUSTWATCH
+                    </a>
+                  </div>
                 )}
               </div>
             </div>
