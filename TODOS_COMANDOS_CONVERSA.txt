@@ -1,0 +1,662 @@
+================================================================================
+GUIA COMPLETO - TODOS OS COMANDOS USADOS NA CONVERSA
+================================================================================
+Compilação de TODOS os comandos e procedimentos desta conversa,
+com explicação detalhada de cada um.
+
+================================================================================
+SEÇÃO 1: NAVEGAÇÃO E AMBIENTE
+================================================================================
+
+Comando:
+  cd C:\Scripts\TestCinema2
+
+Explicação:
+  - "cd" = change directory (mudar de pasta)
+  - Caminho absoluto da pasta do projeto
+
+O que faz:
+  - Muda o terminal para a pasta do projeto
+  - Todos os comandos git/npm rodarão nessa pasta
+
+Onde rodar:
+  - PowerShell ou Terminal do Windows
+
+Teste:
+  Depois de rodar, você deve ver algo como:
+  C:\Scripts\TestCinema2>
+
+Dica:
+  Se estiver em outra pasta, use "cd" para voltar ao projeto antes de
+  rodar qualquer comando git ou npm.
+
+================================================================================
+SEÇÃO 2: INICIAR O SERVIDOR LOCAL (LOCALHOST)
+================================================================================
+
+Comando:
+  npm run dev
+
+Explicação:
+  - "npm" = Node Package Manager (gerenciador de pacotes)
+  - "run" = executar
+  - "dev" = script que inicia o servidor de desenvolvimento
+
+O que faz:
+  - Inicia um servidor local na porta 3000
+  - Seu app roda em http://localhost:3000
+  - O navegador atualiza automaticamente quando você edita código
+
+Onde rodar:
+  - Terminal/PowerShell, dentro de C:\Scripts\TestCinema2
+
+Resultado esperado:
+  ▲ Next.js 14.x.x
+  - Local:        http://localhost:3000
+  - Environments: .env.local
+
+Como acessar:
+  - Abra o navegador
+  - Vá para: http://localhost:3000 ou localhost:3000
+  - O app aparece lá
+
+Como parar:
+  - Pressione Ctrl+C no terminal
+
+Quando usar:
+  - Toda vez que quer testar mudanças localmente
+  - Antes de fazer push para Vercel
+
+================================================================================
+SEÇÃO 3: RECARREGAR A PÁGINA (F5)
+================================================================================
+
+Comando (no navegador):
+  F5  ou  Ctrl+R
+
+Explicação:
+  - F5 = reload (recarregar página)
+  - Ctrl+R = atalho alternativo
+
+O que faz:
+  - Atualiza a página no navegador
+  - Carrega a versão mais recente do código
+  - Limpa o cache local
+
+Quando usar:
+  - Editou o código
+  - npm run dev está rodando
+  - Quer ver as mudanças refletidas
+
+Dica importante:
+  Se mudou o código mas não vê a mudança no navegador:
+  1. Verifique se npm run dev está rodando
+  2. Pressione F5 para recarregar
+  3. Se ainda não aparecer, verificar o console (F12) para erros
+
+================================================================================
+SEÇÃO 4: COMANDOS GIT - VISUALIZAR HISTÓRICO
+================================================================================
+
+Comando:
+  git log --oneline -5
+
+Explicação:
+  - "git log" = mostrar histórico de commits
+  - "--oneline" = formato compacto (uma linha por commit)
+  - "-5" = mostrar apenas os últimos 5 commits
+
+O que mostra:
+  Exemplo de resultado:
+    7a13fe3 (HEAD -> main) Adicionar DROPBOX_FILE_NAME para usar planilha DEV
+    b94c4a2 Sincronizar arquivo Ver filmes/avaliar em funcionamento
+    9bf76ef Force rebuild
+    39f7ccd Força rebuild no Vercel
+    6e8d7e7 Ajustar formato de mensagens WhatsApp
+
+  Onde:
+    - "7a13fe3" = código único do commit (SHA)
+    - "HEAD -> main" = você está nesse commit, na branch main
+    - Resto = mensagem do commit
+
+Quando usar:
+  - Quer ver quais mudanças foram feitas
+  - Quer encontrar um commit específico para reverter
+  - Quer saber o código do commit para fazer revert
+
+Variações:
+  git log                    (mostra histórico completo com detalhes)
+  git log --oneline -10      (últimos 10 commits)
+  git log --oneline -p       (mostra também as mudanças de cada commit)
+
+================================================================================
+SEÇÃO 5: COMANDOS GIT - GUARDAR MUDANÇAS TEMPORÁRIAS
+================================================================================
+
+Comando:
+  git stash
+
+Explicação:
+  - "stash" = guardar/armazenar mudanças temporariamente
+
+O que faz:
+  - Salva todas as mudanças locais em um "cofre"
+  - Limpa a pasta (como se nada tivesse sido editado)
+  - Útil quando há conflitos ou precisa mudar de branch
+
+Analogia:
+  É como guardar seus documentos em uma gaveta antes de limpar a mesa.
+  Você pode recuperá-los depois com "git stash pop".
+
+Situações de uso:
+  - Tem mudanças não commitadas que conflitam com um revert
+  - Precisa mudar de branch mas tem alterações pendentes
+  - Quer descartar tudo e começar de novo
+
+Recuperar depois:
+  git stash pop  (tira do cofre e coloca de volta)
+  git stash apply (aplica sem tirar do cofre)
+
+Exemplo prático:
+  1. Edita alguns arquivos
+  2. Tenta fazer git revert, mas há conflito
+  3. Roda: git stash
+  4. Agora a pasta está limpa
+  5. Faz o revert
+  6. Depois roda: git stash pop (volta suas mudanças)
+
+================================================================================
+SEÇÃO 6: COMANDOS GIT - DESFAZER UM COMMIT
+================================================================================
+
+Comando:
+  git revert 7a13fe3
+
+Explicação:
+  - "revert" = reverter/desfazer um commit anterior
+  - "7a13fe3" = código do commit que quer desfazer (vê com git log)
+
+O que faz:
+  - Cria um NOVO commit que desfaz as mudanças do commit antigo
+  - O histórico fica intacto (não apaga nada)
+  - Você consegue rastrear tudo que foi feito
+
+Diferença importante:
+  - git revert = desfaz mantendo histórico (seguro)
+  - git reset  = apaga o commit (perigoso, não use!)
+
+Versão com --no-edit:
+  git revert 7a13fe3 --no-edit
+
+  Explicação:
+    - "--no-edit" = não abrir editor de mensagem
+    - Cria o commit de revert com mensagem automática
+    - Mais rápido, não precisa interagir com editor
+
+Quando usar:
+  - Fiz um commit errado que foi para Vercel
+  - Descobri um bug depois de fazer push
+  - Preciso desfazer sem apagar o histórico
+
+Passo a passo:
+  1. git log --oneline (encontra o commit errado)
+  2. git revert abc1234 --no-edit (desfaz)
+  3. git push (envia o revert para GitHub e Vercel)
+
+Resultado:
+  - Novo commit aparece no git log: "Revert 'mensagem do commit antigo'"
+  - As mudanças do commit antigo são desfeitas
+  - Vercel detecta e faz deploy com as mudanças desfeitas
+
+================================================================================
+SEÇÃO 7: COMANDOS GIT - PREPARAR ARQUIVOS
+================================================================================
+
+Comando:
+  git add .
+
+Explicação:
+  - "git add" = adicionar/preparar arquivos para commit
+  - "." = TODOS os arquivos que foram modificados
+
+O que faz:
+  - Marca todos os arquivos alterados para serem salvos
+  - Sem git add, as mudanças não são incluídas no commit
+  - É o passo antes de git commit
+
+Outras formas de usar:
+  git add arquivo.js              (um arquivo específico)
+  git add app/                    (uma pasta inteira)
+  git add .                       (TUDO)
+  git add *.js                    (todos com extensão .js)
+
+Verificar o que vai ser adicionado:
+  git status  (mostra quais arquivos serão adicionados)
+
+Fluxo correto:
+  1. Editar arquivos (feito)
+  2. git add . (preparar)
+  3. git commit -m "mensagem" (salvar)
+  4. git push (enviar)
+
+Dica:
+  Sempre faça "git status" antes de git add para ver o que vai entrar.
+
+================================================================================
+SEÇÃO 8: COMANDOS GIT - SALVAR MUDANÇAS (COMMIT)
+================================================================================
+
+Comando:
+  git commit -m "Descrição clara e concisa"
+
+Explicação:
+  - "git commit" = salvar mudanças permanentemente
+  - "-m" = adicionar mensagem (de "message")
+  - Tudo entre aspas é a mensagem do commit
+
+O que faz:
+  - Cria um "ponto de salvação" no histórico do Git
+  - Todos os arquivos do git add são incluídos
+  - Você cria um registro do que foi mudado e por quê
+
+Estrutura da mensagem:
+  Boa prática:
+    git commit -m "Adicionar detecção de WhatsApp app"
+    (Descreve O QUÊ foi feito)
+
+  Ruim:
+    git commit -m "mudou coisa"
+    (Não explica nada)
+
+Exemplos reais da conversa:
+  git commit -m "Adicionar DROPBOX_FILE_NAME para usar planilha DEV"
+  git commit -m "Melhorar compartilhamento WhatsApp: abrir app se tiver, fallback web"
+
+Dica:
+  Use verbos no infinitivo (Adicionar, Corrigir, Atualizar, Remover)
+  Seja específico (o quê e por quê)
+  Não use caracteres especiais ou acentos
+
+Passos antes de commit:
+  1. git add . (preparar tudo)
+  2. git status (verificar)
+  3. git commit -m "mensagem" (salvar)
+
+Verificar:
+  git log --oneline (vê se o commit apareceu)
+
+================================================================================
+SEÇÃO 9: COMANDOS GIT - ENVIAR PARA GITHUB
+================================================================================
+
+Comando:
+  git push
+
+Explicação:
+  - "push" = empurrar/enviar commits para GitHub
+  - Sem argumentos, envia a branch atual
+
+O que faz:
+  - Envia seus commits locais para o repositório remoto (GitHub)
+  - Se você estiver em "main": Vercel detecta e faz deploy automático
+  - Se estiver em "development": nada acontece (seguro)
+
+Versão completa (com nome da branch):
+  git push origin main           (enviar branch main para GitHub)
+  git push origin development    (enviar branch development para GitHub)
+
+Importante:
+  - "origin" = nome do repositório remoto (sempre é "origin")
+  - "main" = branch que quer enviar
+
+Processo completo:
+  1. Fez mudanças no código
+  2. git add .
+  3. git commit -m "mensagem"
+  4. git push origin main (dispara Vercel!)
+
+O que acontece depois:
+  - GitHub recebe seu código
+  - Vercel detecta o push na branch main
+  - Vercel inicia o build/deployment
+  - Em 1-3 minutos, o site atualiza em produção
+
+Segurança:
+  - NUNCA faça git push origin main sem testar antes
+  - Sempre teste no localhost primeiro
+  - Use development para experimentar sem medo
+
+================================================================================
+SEÇÃO 10: COMANDOS GIT - MUDAR DE BRANCH
+================================================================================
+
+Comando:
+  git checkout main
+
+Explicação:
+  - "git checkout" = mudar para uma branch específica
+  - "main" = nome da branch para a qual quer ir
+
+O que faz:
+  - Muda seu código de trabalho para outra branch
+  - Todos os arquivos se atualizam instantaneamente
+  - Você vê exatamente como o código está naquela branch
+
+Exemplos:
+  git checkout main          (volta para main)
+  git checkout development   (vai para development)
+  git checkout -b nova-feature (cria E vai para nova-feature)
+
+Visualizar em qual branch você está:
+  git status
+  (mostra algo como "On branch development")
+
+Fluxo de trabalho:
+  1. Cria branch: git checkout -b development
+  2. Faz mudanças
+  3. Testa (npm run dev, F5)
+  4. Faz commit: git commit -m "..."
+  5. Volta para main: git checkout main
+  6. Mescla: git merge development
+  7. Envia: git push
+
+Dica:
+  Sempre faça git commit ANTES de mudar de branch.
+  Se tiver mudanças não commitadas, use git stash.
+
+================================================================================
+SEÇÃO 11: COMANDOS GIT - MESCLAR BRANCHES
+================================================================================
+
+Comando:
+  git merge development
+
+Explicação:
+  - "git merge" = mesclar/combinar uma branch com outra
+  - "development" = branch que será trazida para a branch atual
+
+O que faz:
+  - Traz todas as mudanças de "development" para "main"
+  - Combina os commits
+  - Se não há conflitos, é automático
+
+Pré-requisito:
+  Você deve estar na branch PARA QUAL quer trazer as mudanças.
+
+Exemplo:
+  Você quer trazer development para main:
+  1. git checkout main (va para main)
+  2. git merge development (traga development aqui)
+  3. git push (envie para GitHub)
+
+Resultado:
+  Todos os commits de development aparecem em main.
+
+Quando há conflitos:
+  Git avisa algo como: "CONFLICT (content merge)"
+  Você precisa:
+  1. Resolver manualmente os conflitos nos arquivos
+  2. git add . (marca como resolvido)
+  3. git commit (completa o merge)
+
+Fluxo completo da conversa:
+  1. git checkout main
+  2. git merge development
+  3. git push  (dispara Vercel!)
+
+Dica:
+  Sempre faça git commit de todas as mudanças ANTES de fazer merge.
+
+================================================================================
+SEÇÃO 12: CRIAR UM NOVO BRANCH
+================================================================================
+
+Comando:
+  git checkout -b development
+
+Explicação:
+  - "git checkout -b" = criar nova branch E ir para ela
+  - "development" = nome do novo branch
+
+O que faz:
+  - Cria uma cópia do código atual
+  - Você pode fazer mudanças SEM afetar main (produção)
+  - Seguro para experimentar
+
+Analogia:
+  É como fazer uma fotocópia do seu projeto para testar mudanças,
+  enquanto o original fica intacto.
+
+Versão separada:
+  git branch development       (criar apenas)
+  git checkout development     (ir para ela)
+
+Usar quando:
+  - Quer adicionar um novo recurso
+  - Quer testar algo sem afetar produção
+  - Quer trabalhar em paralelo com outras mudanças
+
+Nome bom para branches:
+  - feature/novo-recurso
+  - bugfix/corrigir-erro
+  - desenvolvimento
+  - desenvolvimento-novo-recurso
+
+Nome ruim:
+  - test, teste123, mudancas, aaa
+  (Sem sentido, difícil de lembrar)
+
+================================================================================
+SEÇÃO 13: VER STATUS DO GIT
+================================================================================
+
+Comando:
+  git status
+
+Explicação:
+  - "git status" = verificar status da pasta/branch
+
+O que mostra:
+  - Em qual branch você está
+  - Quais arquivos foram modificados
+  - Quais estão preparados para commit
+  - Se há conflitos
+
+Exemplo de resultado:
+  On branch development
+  Changes not staged for commit:
+    modified:   app/page.js
+    modified:   app/globals.css
+
+  Untracked files:
+    novo-arquivo.txt
+
+Interpretação:
+  - "On branch" = você está nessa branch
+  - "modified" = arquivo foi alterado
+  - "Untracked files" = novo arquivo não foi adicionado ao git
+
+Quando usar:
+  - Antes de git add (ver o que vai entrar)
+  - Antes de git commit (verificar tudo está preparado)
+  - Para saber em qual branch você está
+
+================================================================================
+FLUXO COMPLETO DA CONVERSA - PASSO A PASSO
+================================================================================
+
+CENÁRIO: Adicionar um novo recurso sem quebrar Vercel
+
+Passo 1: Abrir o terminal
+  - Abra PowerShell ou Terminal do Windows
+
+Passo 2: Ir para a pasta do projeto
+  cd C:\Scripts\TestCinema2
+
+Passo 3: Criar branch de desenvolvimento
+  git checkout -b development
+
+Passo 4: Iniciar servidor local
+  npm run dev
+  (App roda em http://localhost:3000)
+
+Passo 5: Fazer mudanças no código
+  (Editar arquivos com seu editor)
+
+Passo 6: Ver o que mudou (opcional)
+  git status
+
+Passo 7: Recarregar no navegador
+  F5  (ou Ctrl+R)
+
+Passo 8: Testar e verificar se funciona
+  (Testar manualmente no localhost:3000)
+
+Passo 9: Guardar as mudanças localmente
+  git add .
+  git commit -m "Descrição clara das mudanças"
+
+Passo 10: Ver o commit que criou
+  git log --oneline -5
+
+Passo 11: Se tudo funciona, levar para produção
+  git checkout main          (volta para main)
+  git merge development      (traz mudanças)
+  git push                   (Vercel faz deploy!)
+
+Passo 12: Verificar em Vercel
+  - Vá para https://vercel.com/dashboard
+  - Veja os deployments
+  - Teste em https://clubedocinema.vercel.app
+
+Passo 13: Se descobrir erro depois
+  git log --oneline      (encontra o commit errado)
+  git revert abc1234     (desfaz)
+  git push               (Vercel atualiza!)
+
+================================================================================
+REGRAS DE OURO
+================================================================================
+
+✅ SEMPRE FAÇA:
+  - Começar com git checkout -b para novo recurso
+  - Testar no localhost (npm run dev) antes de push
+  - Fazer commit com mensagens claras
+  - git add . antes de commit
+  - git push de development sem medo (não afeta Vercel)
+  - git status para ver o que vai entrar
+
+❌ NUNCA FAÇA:
+  - git push direto para main sem testar
+  - Deixar mudanças não commitadas
+  - Usar mensagens de commit sem sentido
+  - git reset (apaga histórico, perigoso)
+  - git push origin main sem revisar
+
+================================================================================
+DÚVIDAS FREQUENTES
+================================================================================
+
+P: Fiz uma mudança errada. Como desfaço?
+
+R: Se NÃO fez commit ainda:
+     git checkout -- app/page.js  (volta ao estado anterior)
+
+   Se JÁ fez commit:
+     git log --oneline  (encontra o commit)
+     git revert abc1234 --no-edit  (desfaz)
+     git push  (envia para Vercel)
+
+P: Onde aparecem as mudanças? Localhost ou Vercel?
+
+R: Depende:
+   - Editar arquivos = só localhost (seu PC)
+   - git commit = salva no Git (ainda só seu PC)
+   - git push development = GitHub (Vercel NÃO pega)
+   - git push main = GitHub E Vercel faz deploy
+
+P: Como ver diferenças entre branches?
+
+R: git diff main development (mostra mudanças)
+
+P: Posso apagar um branch depois de fazer merge?
+
+R: Sim, seguro:
+   git branch -d development  (apaga development)
+   git branch -D development  (força apagar)
+
+P: Fiz push para main, mas descobri erro. E agora?
+
+R: Calma, é reversível:
+   git log --oneline  (encontra o commit errado)
+   git revert abc1234 --no-edit  (desfaz)
+   git push  (Vercel atualiza com o revert)
+   Tudo volta ao normal!
+
+P: Preciso voltar para um commit antigo?
+
+R: Para VER como era:
+   git checkout abc1234  (viaja no tempo)
+   git checkout main     (volta ao presente)
+
+   Para REVERTER (desfazer até lá):
+   git revert abc1234 --no-edit
+   git push
+
+================================================================================
+ATALHOS ÚTEIS PARA DIGITAR MENOS
+================================================================================
+
+Alias (apelidos para comandos):
+  git config --global alias.co checkout
+  git config --global alias.br branch
+  git config --global alias.ci commit
+  git config --global alias.st status
+  git config --global alias.log1 log --oneline
+
+Depois você digita menos:
+  git co main              (em vez de git checkout main)
+  git st                   (em vez de git status)
+  git log1 -5              (em vez de git log --oneline -5)
+
+================================================================================
+RESUMO DE TODOS OS COMANDOS
+================================================================================
+
+TERMINAL/NAVEGAÇÃO:
+  cd C:\Scripts\TestCinema2        - ir para pasta do projeto
+  npm run dev                      - iniciar localhost
+
+NAVEGADOR:
+  F5                               - recarregar página
+  localhost:3000                   - acessar app local
+
+GIT - VISUALIZAR:
+  git status                       - ver status
+  git log --oneline -5             - ver últimos 5 commits
+
+GIT - CRIAR:
+  git checkout -b development      - criar nova branch
+
+GIT - EDITAR:
+  git add .                        - preparar arquivos
+  git commit -m "msg"              - salvar com mensagem
+  git stash                        - guardar mudanças
+  git revert abc1234 --no-edit     - desfazer commit
+
+GIT - NAVEGAR:
+  git checkout main                - ir para branch main
+
+GIT - COMBINAR:
+  git merge development            - trazer development para main
+
+GIT - ENVIAR:
+  git push                         - enviar para GitHub
+
+================================================================================
+FIM DO GUIA
+================================================================================
+
+Dúvidas? Revise este arquivo, ele tem a resposta!
+
+Boa sorte com o desenvolvimento! 🚀
