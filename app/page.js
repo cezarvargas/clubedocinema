@@ -55,6 +55,7 @@ export default function App() {
 
   // Histórico de telas para controlar o back button
   const screenHistoryRef = useRef(['login']);
+  const isNavigatingRef = useRef(false);
 
   useEffect(() => {
     api('/api/people')
@@ -65,29 +66,45 @@ export default function App() {
 
   // Intercepta o back button do Android/navegador
   useEffect(() => {
-    const handlePopState = (e) => {
-      e.preventDefault();
-      // Volta para a tela anterior
+    const handlePopState = () => {
+      isNavigatingRef.current = true;
       const history = screenHistoryRef.current;
       if (history.length > 1) {
         history.pop();
-        setScreen(history[history.length - 1]);
+        const prevScreen = history[history.length - 1];
+        setScreen(prevScreen);
       }
     };
 
     window.addEventListener('popstate', handlePopState);
-    // Push o estado inicial pra ter um "voltar"
-    window.history.pushState({ screen: 'login' }, '');
+    // Push estado inicial
+    window.history.pushState({ screen: 'login' }, '', window.location.href);
 
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
   function goTo(next) {
+    if (isNavigatingRef.current) {
+      isNavigatingRef.current = false;
+      return;
+    }
+
+    // Se a tela é a mesma, não faz nada
+    if (screenHistoryRef.current[screenHistoryRef.current.length - 1] === next) {
+      return;
+    }
+
     screenHistoryRef.current.push(next);
-    window.history.pushState({ screen: next }, '');
+    window.history.pushState({ screen: next }, '', window.location.href);
     setScreen(next);
   }
-  function login(name) { setCurrentUser(name); goTo('home'); }
+
+  function login(name) {
+    // Reseta histórico no login
+    screenHistoryRef.current = ['login'];
+    setCurrentUser(name);
+    goTo('home');
+  }
 
   if (screen === 'login') {
     return (
@@ -122,7 +139,12 @@ export default function App() {
     <div className="app-shell">
       <Filmstrip />
       {screen === 'home' && (
-        <HomeScreen currentUser={currentUser} goTo={goTo} onSignOut={() => { setCurrentUser(null); goTo('login'); }} onPickExisting={(m) => { setSelected(m); goTo('rate'); }} />
+        <HomeScreen currentUser={currentUser} goTo={goTo} onSignOut={() => {
+          // Reseta histórico no logout
+          screenHistoryRef.current = ['login'];
+          setCurrentUser(null);
+          goTo('login');
+        }} onPickExisting={(m) => { setSelected(m); goTo('rate'); }} />
       )}
       {screen === 'search' && (
         <SearchScreen
