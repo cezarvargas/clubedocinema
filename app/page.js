@@ -42,7 +42,6 @@ async function api(path, opts) {
 
 export default function App() {
   const [screen, setScreen] = useState('login');
-  const [previousScreen, setPreviousScreen] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const [people, setPeople] = useState([]);
   const [loadingPeople, setLoadingPeople] = useState(true);
@@ -54,7 +53,9 @@ export default function App() {
   const [prefillData, setPrefillData] = useState(null); // { nome, ano, tipo }
   const [confirmData, setConfirmData] = useState(null); // { mensagem, waLink }
 
-  const backPressedRef = useRef(false);
+  // Stack de histórico de telas
+  const screenStackRef = useRef(['login']);
+  const isBackNavigationRef = useRef(false);
 
   useEffect(() => {
     api('/api/people')
@@ -66,34 +67,47 @@ export default function App() {
   // Intercepta o back button do Android/navegador
   useEffect(() => {
     const handlePopState = () => {
-      backPressedRef.current = true;
-      if (previousScreen) {
-        setScreen(previousScreen);
-        setPreviousScreen(null);
+      isBackNavigationRef.current = true;
+      const stack = screenStackRef.current;
+
+      // Remove a tela atual do stack
+      if (stack.length > 1) {
+        stack.pop();
+        const prevScreen = stack[stack.length - 1];
+        setScreen(prevScreen);
+        window.history.pushState({ screen: prevScreen }, '', window.location.href);
       }
     };
 
     window.addEventListener('popstate', handlePopState);
-    window.history.pushState({ screen }, '', window.location.href);
+    // Push estado inicial
+    window.history.pushState({ screen: 'login' }, '', window.location.href);
 
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [screen, previousScreen]);
+  }, []);
 
   function goTo(next) {
-    if (backPressedRef.current) {
-      backPressedRef.current = false;
+    // Ignora se foi navegação de volta
+    if (isBackNavigationRef.current) {
+      isBackNavigationRef.current = false;
       return;
     }
 
-    if (screen !== next) {
-      setPreviousScreen(screen);
-      window.history.pushState({ screen: next }, '', window.location.href);
-      setScreen(next);
+    // Se a tela já está no topo do stack, não faz nada
+    const stack = screenStackRef.current;
+    if (stack[stack.length - 1] === next) {
+      return;
     }
+
+    // Adiciona ao stack e navega
+    stack.push(next);
+    window.history.pushState({ screen: next }, '', window.location.href);
+    setScreen(next);
   }
 
   function login(name) {
-    setPreviousScreen(null);
+    // Reseta stack no login
+    screenStackRef.current = ['login'];
     setCurrentUser(name);
     goTo('home');
   }
@@ -132,7 +146,8 @@ export default function App() {
       <Filmstrip />
       {screen === 'home' && (
         <HomeScreen currentUser={currentUser} goTo={goTo} onSignOut={() => {
-          setPreviousScreen(null);
+          // Reseta stack no logout
+          screenStackRef.current = ['login'];
           setCurrentUser(null);
           goTo('login');
         }} onPickExisting={(m) => { setSelected(m); goTo('rate'); }} />
