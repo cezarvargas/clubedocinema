@@ -57,6 +57,31 @@ export default function App() {
   const screenStackRef = useRef(['login']);
   const isBackNavigationRef = useRef(false);
 
+  // Debug logs
+  const [debugLogs, setDebugLogs] = useState([]);
+  const [showDebug, setShowDebug] = useState(true);
+
+  // Função para adicionar logs de debug
+  const addLog = useCallback((msg) => {
+    setDebugLogs(prev => {
+      const updated = [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`];
+      return updated.slice(-20); // Mantém apenas últimos 20 logs
+    });
+  }, []);
+
+  // Intercepta console.log para adicionar aos logs
+  useEffect(() => {
+    const originalLog = console.log;
+    console.log = function(...args) {
+      originalLog(...args);
+      addLog(args.join(' '));
+    };
+
+    return () => {
+      console.log = originalLog;
+    };
+  }, [addLog]);
+
   useEffect(() => {
     api('/api/people')
       .then(({ data }) => setPeople(data.people || []))
@@ -70,12 +95,16 @@ export default function App() {
       isBackNavigationRef.current = true;
       const stack = screenStackRef.current;
 
+      console.log('📍 BACK PRESSED - Stack antes:', stack);
+
       // Remove a tela atual do stack
       if (stack.length > 1) {
         stack.pop();
         const prevScreen = stack[stack.length - 1];
+        console.log('📍 Voltando para:', prevScreen, '- Stack depois:', stack);
         setScreen(prevScreen);
-        window.history.pushState({ screen: prevScreen }, '', window.location.href);
+      } else {
+        console.log('📍 Stack vazio - saindo do app');
       }
     };
 
@@ -90,17 +119,20 @@ export default function App() {
     // Ignora se foi navegação de volta
     if (isBackNavigationRef.current) {
       isBackNavigationRef.current = false;
+      console.log('🔙 Ignorando goTo por ser back navigation');
       return;
     }
 
     // Se a tela já está no topo do stack, não faz nada
     const stack = screenStackRef.current;
     if (stack[stack.length - 1] === next) {
+      console.log('⚠️  goTo(' + next + ') ignorado - já está no topo do stack');
       return;
     }
 
     // Adiciona ao stack e navega
     stack.push(next);
+    console.log('➡️  goTo(' + next + ') - Stack agora:', stack);
     window.history.pushState({ screen: next }, '', window.location.href);
     setScreen(next);
   }
@@ -182,6 +214,56 @@ export default function App() {
         <ConfirmScreen data={confirmData} goTo={goTo} />
       )}
       {screen === 'sheet' && <SheetScreen currentUser={currentUser} goTo={goTo} onPickExisting={(m) => { setSelected(m); goTo('rate'); }} />}
+
+      {/* Debug Panel */}
+      {showDebug && (
+        <div style={{
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          maxHeight: '200px',
+          backgroundColor: '#1a1410',
+          border: '2px solid #C9A24B',
+          borderRadius: '8px 8px 0 0',
+          padding: '8px',
+          fontFamily: 'monospace',
+          fontSize: '10px',
+          color: '#C9A24B',
+          overflowY: 'auto',
+          zIndex: 9999,
+          boxShadow: '0 -2px 10px rgba(0,0,0,0.5)'
+        }}>
+          <div style={{ marginBottom: '4px', cursor: 'pointer', userSelect: 'none' }} onClick={() => setShowDebug(false)}>
+            ✕ Fechar Debug
+          </div>
+          {debugLogs.map((log, i) => (
+            <div key={i} style={{ marginBottom: '2px', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+              {log}
+            </div>
+          ))}
+        </div>
+      )}
+      {!showDebug && (
+        <button
+          onClick={() => setShowDebug(true)}
+          style={{
+            position: 'fixed',
+            bottom: '10px',
+            left: '10px',
+            zIndex: 9998,
+            padding: '4px 8px',
+            backgroundColor: '#C9A24B',
+            color: '#1a1410',
+            border: 'none',
+            borderRadius: '4px',
+            fontSize: '10px',
+            cursor: 'pointer',
+            fontWeight: 'bold'
+          }}>
+          🐛 Debug
+        </button>
+      )}
     </div>
   );
 }
