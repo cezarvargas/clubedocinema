@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 const TYPE_INFO = {
   F: { label: 'Filme' },
@@ -53,6 +53,9 @@ export default function App() {
   const [prefillData, setPrefillData] = useState(null); // { nome, ano, tipo }
   const [confirmData, setConfirmData] = useState(null); // { mensagem, waLink }
 
+  // Histórico de telas para controlar o back button
+  const screenHistoryRef = useRef(['login']);
+
   useEffect(() => {
     api('/api/people')
       .then(({ data }) => setPeople(data.people || []))
@@ -60,7 +63,30 @@ export default function App() {
       .finally(() => setLoadingPeople(false));
   }, []);
 
-  function goTo(next) { setScreen(next); }
+  // Intercepta o back button do Android/navegador
+  useEffect(() => {
+    const handlePopState = (e) => {
+      e.preventDefault();
+      // Volta para a tela anterior
+      const history = screenHistoryRef.current;
+      if (history.length > 1) {
+        history.pop();
+        setScreen(history[history.length - 1]);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    // Push o estado inicial pra ter um "voltar"
+    window.history.pushState({ screen: 'login' }, '');
+
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  function goTo(next) {
+    screenHistoryRef.current.push(next);
+    window.history.pushState({ screen: next }, '');
+    setScreen(next);
+  }
   function login(name) { setCurrentUser(name); goTo('home'); }
 
   if (screen === 'login') {
