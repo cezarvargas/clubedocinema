@@ -2,10 +2,12 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 
 const TYPE_INFO = {
-  F: { label: 'Filme' },
-  FD: { label: 'Filme Doc.' },
-  S: { label: 'Série' },
-  MS: { label: 'Minissérie' },
+  F: { label: 'Filme', abbrev: 'F' },
+  FD: { label: 'Filme Doc.', abbrev: 'FD' },
+  S: { label: 'Série', abbrev: 'S' },
+  SD: { label: 'Série Doc.', abbrev: 'SD' },
+  MS: { label: 'Minissérie', abbrev: 'MS' },
+  MSD: { label: 'Minissérie Doc.', abbrev: 'MSD' },
 };
 const AVATAR_COLORS = [
   '#C9A24B', '#7EA35A', '#5ED9B8', '#E8A93C', '#D98A93', '#E8B98C',
@@ -31,6 +33,7 @@ const PEOPLE_COLORS = {
 function avatarColor(name) { return PEOPLE_COLORS[name] || AVATAR_COLORS[Object.keys(PEOPLE_COLORS).indexOf(name) % AVATAR_COLORS.length]; }
 
 function typeLabel(t) { return (TYPE_INFO[(t || '').toUpperCase()] || {}).label || t; }
+function typeAbbrev(t) { return (TYPE_INFO[(t || '').toUpperCase()] || {}).abbrev || t.toUpperCase(); }
 function formatNota(n) { return Number(n).toFixed(1).replace('.', ','); }
 
 async function api(path, opts) {
@@ -223,7 +226,7 @@ function HomeScreen({ currentUser, goTo, onSignOut, onPickExisting }) {
         </div>
       </div>
       <div className="content">
-        <button className="cta-primary" onClick={() => goTo('sheet')}>📋 Ver filmes / avaliar</button>
+        <button className="cta-primary" onClick={() => goTo('sheet')}>📋 Ver filmes e séries / avaliar</button>
         <button className="cta-secondary" onClick={() => goTo('search')}>🎬 Incluir novo filme ou série</button>
 
         <p className="section-label">Últimos lançamentos</p>
@@ -249,7 +252,7 @@ function HomeScreen({ currentUser, goTo, onSignOut, onPickExisting }) {
                   {r.isNew && <span className="new-tag">(N)</span>}
                 </div>
                 <div className="entry-meta">
-                  <span className="entry-badge">{typeLabel(r.tipo).toUpperCase()}</span>{r.ano} · {r.pessoa}
+                  <span className="entry-badge">{typeAbbrev(r.tipo)}</span>{r.ano} · {r.pessoa}
                 </div>
               </div>
               <div className="entry-score">{formatNota(r.nota)}</div>
@@ -294,15 +297,15 @@ function HomeScreen({ currentUser, goTo, onSignOut, onPickExisting }) {
 function SearchScreen({ currentUser, goTo, onPickExisting, onNotFound, setPrefillData }) {
   const [nome, setNome] = useState('');
   const [ano, setAno] = useState('');
-  const [tipo, setTipo] = useState('F');
+  const [tipoModo, setTipoModo] = useState(''); // 'filme' ou 'serie'
   const [imdbMatches, setImdbMatches] = useState([]);
   const [searching, setSearching] = useState(false);
   const [searched, setSearched] = useState(false);
   const [error, setError] = useState(null);
 
   async function verificarNoImdb() {
-    if (!nome.trim() || !ano.trim()) {
-      setError('Preencha nome e ano');
+    if (!nome.trim() || !ano.trim() || !tipoModo) {
+      setError('Preencha nome, ano e selecione Filme ou Série');
       return;
     }
     setSearching(true);
@@ -311,7 +314,7 @@ function SearchScreen({ currentUser, goTo, onPickExisting, onNotFound, setPrefil
       const { data } = await api('/api/imdb-search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nome, ano: parseInt(ano, 10), tipo }),
+        body: JSON.stringify({ nome, ano: parseInt(ano, 10), tipoModo }),
       });
       setImdbMatches(data.matches || []);
       setSearched(true);
@@ -364,10 +367,8 @@ function SearchScreen({ currentUser, goTo, onPickExisting, onNotFound, setPrefil
         <div className="field">
           <label>TIPO</label>
           <div className="toggle-row">
-            <button className={`toggle-btn${tipo === 'F' ? ' active' : ''}`} onClick={() => setTipo('F')}>Filme<span className="code">F</span></button>
-            <button className={`toggle-btn${tipo === 'FD' ? ' active' : ''}`} onClick={() => setTipo('FD')}>Filme Doc.<span className="code">FD</span></button>
-            <button className={`toggle-btn${tipo === 'S' ? ' active' : ''}`} onClick={() => setTipo('S')}>Série<span className="code">S</span></button>
-            <button className={`toggle-btn${tipo === 'MS' ? ' active' : ''}`} onClick={() => setTipo('MS')}>Minissérie<span className="code">MS</span></button>
+            <button className={`toggle-btn${tipoModo === 'filme' ? ' active' : ''}`} onClick={() => setTipoModo('filme')}>Filme</button>
+            <button className={`toggle-btn${tipoModo === 'serie' ? ' active' : ''}`} onClick={() => setTipoModo('serie')}>Série</button>
           </div>
         </div>
 
@@ -379,7 +380,9 @@ function SearchScreen({ currentUser, goTo, onPickExisting, onNotFound, setPrefil
 
         {searched && imdbMatches.length > 0 && (
           <div style={{ marginTop: 20 }}>
-            <p style={{ fontSize: 13, color: 'var(--gold)', marginBottom: 12 }}>✅ Encontramos no IMDb:</p>
+            <p style={{ fontSize: 13, color: 'var(--gold)', marginBottom: 12 }}>
+              ✅ {imdbMatches.some(m => m.existsInClub) ? 'Encontramos no Clube' : 'Encontramos no IMDb'}:
+            </p>
             {imdbMatches.map((m, i) => (
               <div key={i} className="choice-card" style={{ padding: 12, marginBottom: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
@@ -387,10 +390,10 @@ function SearchScreen({ currentUser, goTo, onPickExisting, onNotFound, setPrefil
                     {m.nome} <span style={{ fontSize: 11 }}>↗</span>
                   </a>
                   <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>
-                    {typeLabel(m.tipo)} · {m.ano} {m.existsInClub && '· Já no clube'} {m.imdbRating && `· IMDb ${m.imdbRating}`}
+                    {typeAbbrev(m.tipo)} · {m.ano} {m.existsInClub && '· Já no clube'} {m.imdbRating && `· IMDb ${m.imdbRating}`}
                   </div>
                 </div>
-                <button className="link-btn" onClick={() => irParaCadastro(m)} style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
+                <button className="link-btn" onClick={() => irParaCadastro(m)} style={{ fontSize: 14, fontWeight: 600, whiteSpace: 'nowrap', color: '#FFD700' }}>
                   {m.existsInClub ? 'Avaliar' : 'Cadastrar como novo'}
                 </button>
               </div>
@@ -402,16 +405,17 @@ function SearchScreen({ currentUser, goTo, onPickExisting, onNotFound, setPrefil
           <div className="choice-card" style={{ padding: 12, marginTop: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
               <div style={{ color: 'var(--muted)', fontSize: 14, fontWeight: 500 }}>
-                ❌ Não encontramos
+                ❌ Não encontramos no IMDb
               </div>
               <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>
-                {typeLabel(tipo)} · {ano}
+                {tipoModo === 'filme' ? 'Filme' : 'Série'} · {ano}
               </div>
             </div>
             <button className="link-btn" onClick={() => {
               // Não encontrou nada, cadastra sem imdbId
-              // Usa imdbId: null pra indicar "já validado, não encontrado"
-              setPrefillData({ nome: nome.trim(), ano: parseInt(ano, 10), tipo, imdbId: null, imdbRating: null });
+              // Usa tipo genérico (F para filme, S para série) já que não foi detectado
+              const tipoProvisorio = tipoModo === 'filme' ? 'F' : 'S';
+              setPrefillData({ nome: nome.trim(), ano: parseInt(ano, 10), tipo: tipoProvisorio, imdbId: null, imdbRating: null });
               onNotFound(nome.trim());
             }} style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
               Cadastrar como novo sem IMDb
@@ -457,8 +461,8 @@ function RateScreen({ currentUser, match, goTo, onDone }) {
       </div>
       <div className="content">
         <div className="summary-card">
-          <div className="summary-title">{match.nome}</div>
-          <div className="summary-meta"><span className="entry-badge">{typeLabel(match.tipo).toUpperCase()}</span>{match.ano}</div>
+          <div className="summary-title" style={{ fontSize: 18, fontWeight: 600 }}>{match.nome}</div>
+          <div className="summary-meta" style={{ fontSize: 16, marginTop: 8 }}><span className="entry-badge" style={{ fontSize: 14, fontWeight: 600 }}>{typeAbbrev(match.tipo)}</span><span style={{ marginLeft: 8, fontWeight: 500 }}>{match.ano}</span></div>
         </div>
 
         {match.alreadyRatedByMe && (
@@ -485,11 +489,13 @@ function RateScreen({ currentUser, match, goTo, onDone }) {
 // -------------------...
 function NewScreen({ currentUser, prefill, prefillData, goTo, onDone }) {
   const [nome, setNome] = useState(prefillData?.nome || prefill || '');
-  const [tipo, setTipo] = useState(prefillData?.tipo || 'F');
+  const [tipoModo, setTipoModo] = useState(prefillData?.tipo ? (prefillData.tipo.match(/^(F|FD)$/) ? 'filme' : 'serie') : ''); // 'filme' ou 'serie'
+  const [tipo, setTipo] = useState(prefillData?.tipo || ''); // F, FD, S, MS, SD, MSD (auto-detectado)
   const [ano, setAno] = useState(prefillData?.ano ? String(prefillData.ano) : '');
   const [ondeVer, setOndeVer] = useState('');
   const [nota, setNota] = useState(3.5);
   const [stage, setStage] = useState('form'); // form | validating | resultado | duplicate | confirmando
+  const [detectingType, setDetectingType] = useState(false);
   const [validatingMsg] = useState('Conferindo no IMDb...');
   const [errorInfo, setErrorInfo] = useState(null);
   const [validationResult, setValidationResult] = useState(null);
@@ -498,10 +504,54 @@ function NewScreen({ currentUser, prefill, prefillData, goTo, onDone }) {
   useEffect(() => {
     if (prefillData) {
       setNome(prefillData.nome || '');
-      setTipo(prefillData.tipo || 'F');
+      setTipo(prefillData.tipo || '');
+      setTipoModo(prefillData.tipo ? (prefillData.tipo.match(/^(F|FD)$/) ? 'filme' : 'serie') : '');
       setAno(prefillData.ano ? String(prefillData.ano) : '');
     }
   }, [prefillData]);
+
+  // Auto-detecta tipo quando usuário preenche: Filme/Série + título + ano
+  // MAS NÃO roda se vem prefillData (dados já pré-preenchidos do SearchScreen)
+  useEffect(() => {
+    if (prefillData) {
+      // Se vem prefillData, não faz auto-detecção
+      return;
+    }
+
+    if (!tipoModo || !nome || !ano || ano.length !== 4) {
+      setTipo('');
+      return;
+    }
+
+    const detectarTipo = async () => {
+      setDetectingType(true);
+      try {
+        const res = await fetch('/api/detectType', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nome, tipoModo, ano: parseInt(ano, 10) }),
+        });
+        const data = await res.json();
+
+        if (data.found) {
+          setTipo(data.tipo);
+          setErrorInfo(null);
+        } else {
+          setErrorInfo(`Não foi possível detectar o tipo automaticamente. Tente com um título mais exato.`);
+          setTipo('');
+        }
+      } catch (err) {
+        setErrorInfo(err.message);
+        setTipo('');
+      } finally {
+        setDetectingType(false);
+      }
+    };
+
+    // Aguarda um curto delay antes de chamar a API para evitar múltiplas chamadas
+    const timer = setTimeout(detectarTipo, 500);
+    return () => clearTimeout(timer);
+  }, [tipoModo, nome, ano, prefillData]);
 
   async function validate() {
     setStage('validating');
@@ -565,7 +615,7 @@ function NewScreen({ currentUser, prefill, prefillData, goTo, onDone }) {
                style={{ textDecoration: 'none', color: 'inherit' }}>
               <div className="summary-card">
                 <div className="summary-title" style={{ cursor: 'pointer', color: '#6BA3FF' }}>{f.nome}<span style={{ fontSize: '0.7em', marginLeft: 4 }}>↗</span></div>
-                <div className="summary-meta"><span className="entry-badge">{typeLabel(f.tipo).toUpperCase()}</span>{f.ano}</div>
+                <div className="summary-meta"><span className="entry-badge">{typeAbbrev(f.tipo)}</span>{f.ano}</div>
                 {f.imdbRating && <div className="summary-meta" style={{ marginTop: 8, fontSize: 13 }}>IMDb: {formatNota(f.imdbRating)}</div>}
               </div>
             </a>
@@ -623,28 +673,54 @@ function NewScreen({ currentUser, prefill, prefillData, goTo, onDone }) {
         <h1 style={{ margin: 0 }}>Preencha os dados</h1>
       </div>
       <div className="content">
-        <div className="field">
-          <label>TÍTULO</label>
-          <input type="text" placeholder="Nome exato do filme ou série" value={nome} onChange={e => setNome(e.target.value)} />
-        </div>
-        <div className="field">
-          <label>TIPO</label>
-          <div className="toggle-row">
-            <button className={`toggle-btn${tipo === 'F' ? ' active' : ''}`} onClick={() => setTipo('F')}>Filme<span className="code">F</span></button>
-            <button className={`toggle-btn${tipo === 'FD' ? ' active' : ''}`} onClick={() => setTipo('FD')}>Filme Doc.<span className="code">FD</span></button>
-            <button className={`toggle-btn${tipo === 'S' ? ' active' : ''}`} onClick={() => setTipo('S')}>Série<span className="code">S</span></button>
-            <button className={`toggle-btn${tipo === 'MS' ? ' active' : ''}`} onClick={() => setTipo('MS')}>Minissérie<span className="code">MS</span></button>
-          </div>
-        </div>
-        <div className="field">
-          <label>ANO</label>
-          <input type="text" placeholder="Ex: 2024" value={ano} onChange={e => setAno(e.target.value)} maxLength="4" />
-          {ano && (ano.length !== 4 || isNaN(parseInt(ano, 10)) || parseInt(ano, 10) < 1900 || parseInt(ano, 10) > 2027) && (
-            <p style={{ color: 'var(--error)', fontSize: 12, marginTop: 6 }}>
-              Ano deve ter 4 dígitos entre 1900 e 2027
-            </p>
-          )}
-        </div>
+        {prefillData ? (
+          // Modo: dados pré-preenchidos (apenas leitura)
+          <>
+            <div style={{ backgroundColor: 'var(--darker)', borderRadius: 12, padding: 16, marginBottom: 20 }}>
+              <div style={{ marginBottom: 12 }}>
+                <p style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 1, margin: '0 0 8px' }}>Título</p>
+                <h2 style={{ margin: 0, fontSize: 20, fontWeight: 600, color: '#fff' }}>{nome}</h2>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 12, borderTop: '1px solid var(--dark)' }}>
+                <div>
+                  <p style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 1, margin: '0 0 4px' }}>Tipo</p>
+                  <span className="entry-badge" style={{ fontSize: 14, fontWeight: 'bold', padding: '6px 12px' }}>{typeAbbrev(tipo)}</span>
+                </div>
+                <div>
+                  <p style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 1, margin: '0 0 4px' }}>Ano</p>
+                  <p style={{ margin: 0, fontSize: 16, fontWeight: 600, color: 'var(--gold)' }}>{ano}</p>
+                </div>
+              </div>
+            </div>
+          </>
+        ) : (
+          // Modo: entrada de dados (editável)
+          <>
+            <div className="field">
+              <label>TÍTULO</label>
+              <input type="text" placeholder="Nome exato do filme ou série" value={nome} onChange={e => setNome(e.target.value)} />
+            </div>
+            <div className="field">
+              <label>TIPO</label>
+              <div className="toggle-row">
+                <button className={`toggle-btn${tipoModo === 'filme' ? ' active' : ''}`} onClick={() => setTipoModo('filme')} disabled={detectingType}>Filme</button>
+                <button className={`toggle-btn${tipoModo === 'serie' ? ' active' : ''}`} onClick={() => setTipoModo('serie')} disabled={detectingType}>Série</button>
+              </div>
+              {detectingType && <p style={{ fontSize: 12, color: 'var(--muted)', marginTop: 8, fontStyle: 'italic' }}>Detectando tipo...</p>}
+              {tipo && <p style={{ fontSize: 12, color: 'var(--good)', marginTop: 8, fontWeight: 'bold' }}>Detectado: {typeAbbrev(tipo)}</p>}
+              {!detectingType && !tipo && tipoModo && <p style={{ fontSize: 12, color: 'var(--muted)', marginTop: 8 }}>Preencha o título para detectar o tipo</p>}
+            </div>
+            <div className="field">
+              <label>ANO</label>
+              <input type="text" placeholder="Ex: 2024" value={ano} onChange={e => setAno(e.target.value)} maxLength="4" />
+              {ano && (ano.length !== 4 || isNaN(parseInt(ano, 10)) || parseInt(ano, 10) < 1900 || parseInt(ano, 10) > 2027) && (
+                <p style={{ color: 'var(--error)', fontSize: 12, marginTop: 6 }}>
+                  Ano deve ter 4 dígitos entre 1900 e 2027
+                </p>
+              )}
+            </div>
+          </>
+        )}
         <div className="field">
           <label>ONDE VIU</label>
           <input type="text" placeholder="Ex: Netflix, cinema..." value={ondeVer} onChange={e => setOndeVer(e.target.value)} />
@@ -656,9 +732,10 @@ function NewScreen({ currentUser, prefill, prefillData, goTo, onDone }) {
         </div>
 
         {errorInfo && <div className="status-banner status-error" style={{ display: 'block' }}>{errorInfo}</div>}
-        <button className="cta-primary" onClick={() => { prefillData?.imdbId !== undefined ? confirmAndSave() : validate(); }} disabled={!nome || !ano}>
+        <button className="cta-primary" onClick={() => { prefillData?.imdbId !== undefined ? confirmAndSave() : validate(); }} disabled={prefillData ? false : (!nome || !ano || !tipo || detectingType)}>
           Cadastrar
         </button>
+        {!prefillData && tipoModo && !tipo && !detectingType && <p style={{ fontSize: 12, color: 'var(--error)', marginTop: 8 }}>Complete o formulário para detectar o tipo</p>}
       </div>
     </div>
   );
@@ -774,10 +851,11 @@ function SheetScreen({ currentUser, goTo, onPickExisting }) {
 
           {/* Filtro de tipo - sempre visível */}
           <div className="filter-row">
-            <button className={`filter-chip${tipo === 'F' ? ' active' : ''}`} onClick={() => pickFilter('F')}>Filmes</button>
-            <button className={`filter-chip${tipo === 'FD' ? ' active' : ''}`} onClick={() => pickFilter('FD')}>Filmes doc.</button>
-            <button className={`filter-chip${tipo === 'S' ? ' active' : ''}`} onClick={() => pickFilter('S')}>Séries</button>
-            <button className={`filter-chip${tipo === 'MS' ? ' active' : ''}`} onClick={() => pickFilter('MS')}>Miniséries</button>
+            <button className={`filter-chip${tipo === 'todos' ? ' active' : ''}`} onClick={() => pickFilter('todos')}>Todos</button>
+            <button className={`filter-chip${tipo === 'filmes' ? ' active' : ''}`} onClick={() => pickFilter('filmes')}>Filmes</button>
+            <button className={`filter-chip${tipo === 'series' ? ' active' : ''}`} onClick={() => pickFilter('series')}>Séries</button>
+            <button className={`filter-chip${tipo === 'miniseries' ? ' active' : ''}`} onClick={() => pickFilter('miniseries')}>Miniséries</button>
+            <button className={`filter-chip${tipo === 'documentarios' ? ' active' : ''}`} onClick={() => pickFilter('documentarios')}>Documentários</button>
           </div>
 
           {/* Ordenar - sempre visível */}
@@ -821,7 +899,7 @@ function SheetScreen({ currentUser, goTo, onPickExisting }) {
                     </a>
                   ) : <div className="sheet-title unconfirmed">{m.nome}</div>}
                   <div className="sheet-meta">
-                    {typeLabel(m.tipo)} · {m.ano} · {m.votos} aval.{m.discutido ? ' · D' : ''}{metaExtra}
+                    {typeAbbrev(m.tipo)} · {m.ano} · {m.votos} aval.{m.discutido ? ' · D' : ''}{metaExtra}
                   </div>
                 </div>
                 <div className="sheet-avg">{bigNumber} <span className="chev">▾</span></div>
