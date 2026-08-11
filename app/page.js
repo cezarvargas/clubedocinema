@@ -849,13 +849,15 @@ function SheetScreen({ currentUser, goTo, onPickExisting }) {
 
           <input type="text" placeholder="Buscar título..." value={query} onChange={e => setQuery(e.target.value)} />
 
-          {/* Filtro de tipo - sempre visível */}
+          {/* Filtro de tipo - sempre visível (2 linhas para mobile) */}
           <div className="filter-row">
             <button className={`filter-chip${tipo === 'todos' ? ' active' : ''}`} onClick={() => pickFilter('todos')}>Todos</button>
             <button className={`filter-chip${tipo === 'filmes' ? ' active' : ''}`} onClick={() => pickFilter('filmes')}>Filmes</button>
             <button className={`filter-chip${tipo === 'series' ? ' active' : ''}`} onClick={() => pickFilter('series')}>Séries</button>
+          </div>
+          <div className="filter-row" style={{ marginTop: 6 }}>
             <button className={`filter-chip${tipo === 'miniseries' ? ' active' : ''}`} onClick={() => pickFilter('miniseries')}>Miniséries</button>
-            <button className={`filter-chip${tipo === 'documentarios' ? ' active' : ''}`} onClick={() => pickFilter('documentarios')}>Docum</button>
+            <button className={`filter-chip${tipo === 'documentarios' ? ' active' : ''}`} onClick={() => pickFilter('documentarios')}>Documentários</button>
           </div>
 
           {/* Ordenar - sempre visível */}
