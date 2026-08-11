@@ -105,7 +105,7 @@ export async function POST(request) {
     // Procura na planilha por qualquer tipo que corresponda ao tipoModo
     let existsInClub = null;
 
-    // Normaliza nome: remove acentos, artigos, pontuação, lowercase
+    // Normaliza nome: remove acentos, artigos, lowercase, e pontuação extra
     function normalize(s) {
       return (s || '')
         .toString()
@@ -114,7 +114,8 @@ export async function POST(request) {
         .toLowerCase()
         .trim()
         .replace(/^(a|o|um|uma|the|an)\s+/i, '') // remove artigos do início
-        .replace(/[:\-\.]/g, '') // remove pontuação (: - .)
+        .replace(/:\s+/g, ' ') // substitui ": " por espaço único
+        .replace(/\s+/g, ' ') // normaliza múltiplos espaços
         .trim();
     }
 
