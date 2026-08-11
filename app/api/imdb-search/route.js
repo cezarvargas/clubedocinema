@@ -122,13 +122,18 @@ export async function POST(request) {
     const nomeNorm = normalize(nome);
     const anoInt = parseInt(ano, 10);
 
+    console.log(`[DEBUG] Buscando: nome="${nome}" (normalizado="${nomeNorm}"), ano=${anoInt}, tipoModo=${tipoModo}`);
+
     if (tipoModo === 'filme') {
       // Procura por F ou FD (filmes)
-      existsInClub = sheet.rows.find(r =>
-        normalize(r.nome) === nomeNorm &&
-        String(r.ano) === String(anoInt) &&
-        ['F', 'FD'].includes(r.tipo.trim().toUpperCase())
-      );
+      existsInClub = sheet.rows.find(r => {
+        const rNomeNorm = normalize(r.nome);
+        const match = rNomeNorm === nomeNorm && String(r.ano) === String(anoInt) && ['F', 'FD'].includes(r.tipo.trim().toUpperCase());
+        if (match) {
+          console.log(`[DEBUG] ✅ ENCONTRADO NA PLANILHA: "${r.nome}" (normalizado="${rNomeNorm}")`);
+        }
+        return match;
+      });
     } else {
       // Procura por S, MS, SD, MSD (séries)
       existsInClub = sheet.rows.find(r =>
