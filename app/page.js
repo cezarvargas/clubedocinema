@@ -809,6 +809,7 @@ function SheetScreen({ currentUser, goTo, onPickExisting }) {
 
   useEffect(() => {
     setLoading(true);
+    setItems([]);
     const t = setTimeout(() => {
       const params = new URLSearchParams({
         q: query,
@@ -856,6 +857,7 @@ function SheetScreen({ currentUser, goTo, onPickExisting }) {
             <button className={`filter-chip${tipo === 'series' ? ' active' : ''}`} onClick={() => pickFilter('series')}>Séries</button>
             <button className={`filter-chip${tipo === 'miniseries' ? ' active' : ''}`} onClick={() => pickFilter('miniseries')}>Miniséries</button>
             <button className={`filter-chip${tipo === 'documentarios' ? ' active' : ''}`} onClick={() => pickFilter('documentarios')}>Documentários</button>
+            <button className={`filter-chip${tipo === 'oscar' ? ' active' : ''}`} onClick={() => pickFilter('oscar')}>Oscar</button>
           </div>
 
           {/* Ordenar - sempre visível */}
