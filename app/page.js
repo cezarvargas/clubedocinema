@@ -99,6 +99,7 @@ export default function App() {
     // Se a tela já está no topo do stack, não faz nada
     const stack = screenStackRef.current;
     if (stack[stack.length - 1] === next) {
+      setScreen(next);
       return;
     }
 
