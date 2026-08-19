@@ -265,11 +265,18 @@ function HomeScreen({ currentUser, goTo, onSignOut, onPickExisting }) {
               ))}
               {openIndex === i && onPickExisting && (
                 <div style={{ display: 'flex', alignItems: 'center', width: '100%', gap: 12 }}>
-                  <button className="sheet-avaliar-btn" onClick={async () => {
-                    const { data } = await api(`/api/search?q=${encodeURIComponent(r.nome || r.titulo)}&user=${encodeURIComponent(currentUser)}`);
-                    const match = data.matches?.[0];
-                    if (match) onPickExisting(match);
-                  }}>
+                  <button className="sheet-avaliar-btn" onClick={() => {
+                    const myScore = r.scores?.[currentUser];
+                    onPickExisting({
+                      rowNumber: r.rowNumber,
+                      nome: r.titulo,
+                      tipo: r.tipo,
+                      ano: r.ano,
+                      imdbLink: r.imdbLink,
+                      alreadyRatedByMe: myScore != null,
+                      myScore: myScore != null ? formatNota(myScore) : null,
+                    });
+                  }} disabled={!r.rowNumber}>
                     AVALIAR
                   </button>
                   <div style={{ flex: 1 }} />
