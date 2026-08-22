@@ -1,14 +1,15 @@
 import { getKeys } from '../../../lib/withSheet';
 import { loadFromDropbox } from '../../../lib/withSheet';
-import { tmdbLookup } from '../../../lib/tmdb';
-import { findDuplicate } from '../../../lib/sheet';
+import { omdbLookupById } from '../../../lib/omdb';
 import { normalizeTitle, titleSearchCandidates } from '../../../lib/normalizeTitle';
+import { findTitlesInClub, clubTitleResponse } from '../../../lib/clubTitleSearch';
+import { isAcceptedYear } from '../../../lib/titleYear';
 
 const TMDB_BASE = 'https://api.themoviedb.org/3';
 
-async function detectCompleteType(nome, ano, tipoModo, tmdbKey) {
-  // Busca no TMDb e retorna TODOS os resultados com auto-detecção completa (F, FD, S, MS, SD, MSD)
+async function searchVerifiedTitles(nome, ano, tipoModo, tmdbKey, omdbKey) {
   const isFilme = tipoModo === 'filme';
+  // O TMDb localiza o título em português e também confirma filme/série.
   const endpoint = isFilme ? 'search/movie' : 'search/tv';
   const yearParam = ano ? (isFilme ? `&primary_release_year=${ano}` : `&first_air_date_year=${ano}`) : '';
   try {
@@ -46,6 +47,7 @@ async function detectCompleteType(nome, ano, tipoModo, tmdbKey) {
       try {
         const itemId = item.id;
         const title = isFilme ? item.title : item.name;
+        const originalTitle = isFilme ? item.original_title : item.original_name;
         let year = usedRelaxedYear
           ? String(ano)
           : (isFilme ? (item.release_date || '').slice(0, 4) : (item.first_air_date || '').slice(0, 4));
@@ -85,31 +87,30 @@ async function detectCompleteType(nome, ano, tipoModo, tmdbKey) {
         const external = await externalRes.json();
         const imdbId = external.imdb_id;
 
-        // Busca nota do IMDb
+        // Confirma o resultado e busca a nota pelo IMDb ID.
         let imdbRating = null;
+        let omdbData = null;
         if (imdbId) {
-          const omdbUrl = `http://www.omdbapi.com/?apikey=${process.env.OMDB_API_KEY}&i=${imdbId}`;
-          try {
-            const omdbRes = await fetch(omdbUrl);
-            const omdbData = await omdbRes.json();
-            if (omdbData.Year && !usedRelaxedYear) {
-              year = String(omdbData.Year).slice(0, 4);
-            }
-            if (omdbData.imdbRating && omdbData.imdbRating !== 'N/A') {
-              imdbRating = parseFloat(omdbData.imdbRating);
-            }
-          } catch (e) {
-            // Falha ao buscar rating, continua sem
+          omdbData = await omdbLookupById({ imdbId, apiKey: omdbKey });
+          if (omdbData) {
+            if (omdbData.ano && !usedRelaxedYear) year = String(omdbData.ano);
+            imdbRating = omdbData.imdbRating;
           }
         }
-
-        allItems.push({
-          imdbId,
-          nome: title,
-          ano: parseInt(year) || ano,
-          tipo,
-          imdbRating,
-        });
+        // Sem confirmação por ID não podemos afirmar qual é o título do IMDb.
+        if (omdbData) {
+          if (!isAcceptedYear(ano, omdbData.ano, usedRelaxedYear)) continue;
+          allItems.push({
+            imdbId,
+            // Usa a tradução pt-BR do TMDb. Quando ela não existe, preserva o
+            // nome informado, que pode ser um título brasileiro alternativo.
+            nome: normalizeTitle(title) !== normalizeTitle(originalTitle) ? title : nome.trim(),
+            ano: usedRelaxedYear ? parseInt(ano, 10) : (omdbData.ano || parseInt(year) || ano),
+            tipo,
+            imdbRating,
+            aliases: [nome, title],
+          });
+        }
       } catch (itemErr) {
         console.error('[detectCompleteType] Erro processando item:', itemErr);
       }
@@ -131,76 +132,58 @@ export async function POST(request) {
       return Response.json({ error: 'Campos obrigatórios: nome, ano, tipoModo.' }, { status: 400 });
     }
 
-    const { tmdbKey } = getKeys();
+    const { tmdbKey, omdbKey } = getKeys();
+    const sheet = await loadFromDropbox();
+    const anoInt = parseInt(ano, 10);
+    const nomeDigitado = nome.trim();
     console.log(`[imdb-search] Buscando: ${nome} (${ano}) como ${tipoModo}`);
 
-    // PASSO 1: Busca no TMDb PRIMEIRO para obter o nome correto e completo
-    console.log(`[imdb-search] Passo 1: Buscando resultados no TMDb...`);
-    const foundItems = await detectCompleteType(nome, ano, tipoModo, tmdbKey);
+    // PASSO 1: resolve imediatamente se o título digitado já está no clube.
+    const directClubMatches = findTitlesInClub(sheet, {
+      names: [nomeDigitado], years: [anoInt], tipoModo,
+    });
+    if (directClubMatches.length > 0) {
+      console.log(`[imdb-search] ${directClubMatches.length} resultado(s) encontrado(s) diretamente na planilha.`);
+      return Response.json({ matches: directClubMatches.map(clubTitleResponse) });
+    }
+
+    // PASSO 2: OMDb exato; se necessário, TMDb para descoberta + OMDb por ID.
+    console.log(`[imdb-search] Buscando e confirmando o título externamente...`);
+    const foundItems = await searchVerifiedTitles(nome, ano, tipoModo, tmdbKey, omdbKey);
 
     if (foundItems.length === 0) {
       console.log(`[imdb-search] Nenhum resultado encontrado no TMDb.`);
       return Response.json({ matches: [] });
     }
 
-    // PASSO 2: Para cada resultado do TMDb, procura na planilha
-    console.log(`[imdb-search] Passo 2: Procurando na planilha...`);
-    const sheet = await loadFromDropbox();
-    const anoInt = parseInt(ano, 10);
-    const nomeDigitado = nome.trim();
-    const nomeDigitadoNorm = normalizeTitle(nomeDigitado);
+    // PASSO 3: verifica novamente a planilha usando também os nomes externos.
+    console.log(`[imdb-search] Verificando aliases na planilha...`);
     const matchesInClub = [];
     const matchesNotInClub = [];
 
     for (const found of foundItems) {
       const nomeCorreto = found.nome;
-      const nomeCorretoNorm = normalizeTitle(nomeCorreto);
-
-      console.log(`[imdb-search] Verificando: "${nomeCorreto}" (normalizado="${nomeCorretoNorm}")`);
-
-      // Procura na planilha usando o nome CORRETO do TMDb
-      let existsInClub = null;
-
-      if (tipoModo === 'filme') {
-        // Procura por F ou FD (filmes)
-        existsInClub = sheet.rows.find(r => {
-          const rNomeNorm = normalizeTitle(r.nome);
-          const match = (rNomeNorm === nomeCorretoNorm || rNomeNorm === nomeDigitadoNorm) && String(r.ano) === String(anoInt) && ['F', 'FD'].includes(r.tipo.trim().toUpperCase());
-          if (match) {
-            console.log(`[DEBUG] ✅ ENCONTRADO NA PLANILHA: "${r.nome}" (normalizado="${rNomeNorm}")`);
-          }
-          return match;
-        });
-      } else {
-        // Procura por S, MS, SD, MSD (séries)
-        existsInClub = sheet.rows.find(r => {
-          const rNomeNorm = normalizeTitle(r.nome);
-          const match = (rNomeNorm === nomeCorretoNorm || rNomeNorm === nomeDigitadoNorm) && String(r.ano) === String(anoInt) && ['S', 'MS', 'SD', 'MSD'].includes(r.tipo.trim().toUpperCase());
-          if (match) {
-            console.log(`[DEBUG] ✅ ENCONTRADO NA PLANILHA: "${r.nome}" (normalizado="${rNomeNorm}")`);
-          }
-          return match;
-        });
-      }
+      const existingRows = findTitlesInClub(sheet, {
+        names: [nomeDigitado, nomeCorreto, ...(found.aliases || [])],
+        years: [anoInt, found.ano],
+        tipoModo,
+        imdbId: found.imdbId,
+      });
 
       // Se encontrou na planilha, adiciona na lista de encontrados
-      if (existsInClub) {
+      if (existingRows.length > 0) {
         console.log(`[imdb-search] ✅ "${nomeCorreto}" encontrado na planilha!`);
-        matchesInClub.push({
-          imdbId: existsInClub.imdbLink ? existsInClub.imdbLink.split('/title/')[1]?.split('/')[0] : null,
-          nome: existsInClub.nome,
-          ano: existsInClub.ano,
-          tipo: existsInClub.tipo, // Tipo da planilha
-          imdbRating: existsInClub.imdbNota || null,
-          existsInClub: true,
-          rowNumber: existsInClub.rowNumber,
-        });
+        for (const row of existingRows) {
+          if (!matchesInClub.some(match => match.rowNumber === row.rowNumber)) {
+            matchesInClub.push(clubTitleResponse(row));
+          }
+        }
       } else {
         // Não encontrou na planilha, adiciona em lista separada
         console.log(`[imdb-search] "${nomeCorreto}" não encontrado na planilha.`);
         matchesNotInClub.push({
           imdbId: found.imdbId,
-          nome: nomeDigitado,
+          nome: found.nome,
           ano: found.ano,
           tipo: found.tipo, // Tipo detectado automaticamente
           imdbRating: found.imdbRating || null,

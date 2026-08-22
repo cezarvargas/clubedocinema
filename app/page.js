@@ -338,7 +338,7 @@ function SearchScreen({ currentUser, goTo, onPickExisting, onNotFound, setPrefil
   function irParaCadastro(filme) {
     if (filme.existsInClub) {
       // Se já existe, vai avaliar
-      onPickExisting({ rowNumber: filme.rowNumber, nome: filme.nome, tipo: filme.tipo, ano: filme.ano, imdbLink: `https://www.imdb.com/title/${filme.imdbId}/` });
+      onPickExisting({ rowNumber: filme.rowNumber, nome: filme.nome, tipo: filme.tipo, ano: filme.ano, imdbLink: filme.imdbId ? `https://www.imdb.com/title/${filme.imdbId}/` : null });
     } else {
       // Se não existe, vai cadastrar com dados do IMDb preenchidos (já validados na Tela 1)
       setPrefillData({ nome: filme.nome, ano: parseInt(filme.ano, 10), tipo: filme.tipo, imdbId: filme.imdbId, imdbRating: filme.imdbRating });
@@ -394,9 +394,11 @@ function SearchScreen({ currentUser, goTo, onPickExisting, onNotFound, setPrefil
             {imdbMatches.map((m, i) => (
               <div key={i} className="choice-card" style={{ padding: 12, marginBottom: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                  <a href={`https://www.imdb.com/title/${m.imdbId}/`} target="_blank" rel="noopener" style={{ color: '#5B9FD9', textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>
-                    {m.nome} <span style={{ fontSize: 11 }}>↗</span>
-                  </a>
+                  {m.imdbId ? (
+                    <a href={`https://www.imdb.com/title/${m.imdbId}/`} target="_blank" rel="noopener" style={{ color: '#5B9FD9', textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>
+                      {m.nome} <span style={{ fontSize: 11 }}>↗</span>
+                    </a>
+                  ) : <span style={{ fontSize: 14, fontWeight: 500 }}>{m.nome}</span>}
                   <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>
                     {typeAbbrev(m.tipo)} · {m.ano} {m.existsInClub && '· Já no clube'} {m.imdbRating && `· IMDb ${m.imdbRating}`}
                   </div>
