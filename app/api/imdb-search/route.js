@@ -13,17 +13,25 @@ async function detectCompleteType(nome, ano, tipoModo, tmdbKey) {
   const yearParam = ano ? (isFilme ? `&primary_release_year=${ano}` : `&first_air_date_year=${ano}`) : '';
   try {
     let filteredResults = [];
-    for (const candidate of titleSearchCandidates(nome)) {
-      const url = `${TMDB_BASE}/${endpoint}?api_key=${tmdbKey}&query=${encodeURIComponent(candidate)}${yearParam}&language=pt-BR`;
-      const res = await fetch(url);
-      const data = await res.json();
-      const candidateNormalized = normalizeTitle(candidate);
+    let usedRelaxedYear = false;
+    // Alguns filmes têm ano de festival diferente do lançamento comercial no
+    // TMDb. Primeiro respeita o ano informado; só então tenta sem esse filtro.
+    const yearAttempts = yearParam ? [yearParam, ''] : [''];
+    for (const attemptedYearParam of yearAttempts) {
+      usedRelaxedYear = Boolean(yearParam) && !attemptedYearParam;
+      for (const candidate of titleSearchCandidates(nome)) {
+        const url = `${TMDB_BASE}/${endpoint}?api_key=${tmdbKey}&query=${encodeURIComponent(candidate)}${attemptedYearParam}&language=pt-BR`;
+        const res = await fetch(url);
+        const data = await res.json();
+        const candidateNormalized = normalizeTitle(candidate);
 
-      filteredResults = (data.results || []).filter(item => {
-        const title = isFilme ? item.title : item.name;
-        return normalizeTitle(title).includes(candidateNormalized);
-      });
+        filteredResults = (data.results || []).filter(item => {
+          const title = isFilme ? item.title : item.name;
+          return normalizeTitle(title).includes(candidateNormalized);
+        });
 
+        if (filteredResults.length > 0) break;
+      }
       if (filteredResults.length > 0) break;
     }
 
@@ -38,7 +46,9 @@ async function detectCompleteType(nome, ano, tipoModo, tmdbKey) {
       try {
         const itemId = item.id;
         const title = isFilme ? item.title : item.name;
-        const year = isFilme ? (item.release_date || '').slice(0, 4) : (item.first_air_date || '').slice(0, 4);
+        let year = usedRelaxedYear
+          ? String(ano)
+          : (isFilme ? (item.release_date || '').slice(0, 4) : (item.first_air_date || '').slice(0, 4));
 
         // Busca detalhes
         const detailsEndpoint = isFilme ? 'movie' : 'tv';
@@ -82,6 +92,9 @@ async function detectCompleteType(nome, ano, tipoModo, tmdbKey) {
           try {
             const omdbRes = await fetch(omdbUrl);
             const omdbData = await omdbRes.json();
+            if (omdbData.Year && !usedRelaxedYear) {
+              year = String(omdbData.Year).slice(0, 4);
+            }
             if (omdbData.imdbRating && omdbData.imdbRating !== 'N/A') {
               imdbRating = parseFloat(omdbData.imdbRating);
             }
