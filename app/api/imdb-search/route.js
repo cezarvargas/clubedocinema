@@ -2,6 +2,7 @@ import { getKeys } from '../../../lib/withSheet';
 import { loadFromDropbox } from '../../../lib/withSheet';
 import { tmdbLookup } from '../../../lib/tmdb';
 import { findDuplicate } from '../../../lib/sheet';
+import { normalizeTitle, titleSearchCandidates } from '../../../lib/normalizeTitle';
 
 const TMDB_BASE = 'https://api.themoviedb.org/3';
 
@@ -10,36 +11,21 @@ async function detectCompleteType(nome, ano, tipoModo, tmdbKey) {
   const isFilme = tipoModo === 'filme';
   const endpoint = isFilme ? 'search/movie' : 'search/tv';
   const yearParam = ano ? (isFilme ? `&primary_release_year=${ano}` : `&first_air_date_year=${ano}`) : '';
-  const url = `${TMDB_BASE}/${endpoint}?api_key=${tmdbKey}&query=${encodeURIComponent(nome)}${yearParam}&language=pt-BR`;
-
-  // Normaliza o nome procurado para filtrar resultados
-  function normalize(s) {
-    return (s || '')
-      .toString()
-      .normalize('NFKD')
-      .replace(/[̀-ͯ]/g, '') // remove acentos
-      .toLowerCase()
-      .trim()
-      .replace(/^(a|o|um|uma|the|an)\s+/i, '') // remove artigos do início
-      .replace(/:\s+/g, ' ') // substitui ": " por espaço único
-      .replace(/\s+/g, ' ') // normaliza múltiplos espaços
-      .trim();
-  }
-
   try {
-    const res = await fetch(url);
-    const data = await res.json();
-    const results = data.results || [];
+    let filteredResults = [];
+    for (const candidate of titleSearchCandidates(nome)) {
+      const url = `${TMDB_BASE}/${endpoint}?api_key=${tmdbKey}&query=${encodeURIComponent(candidate)}${yearParam}&language=pt-BR`;
+      const res = await fetch(url);
+      const data = await res.json();
+      const candidateNormalized = normalizeTitle(candidate);
 
-    if (results.length === 0) return [];
+      filteredResults = (data.results || []).filter(item => {
+        const title = isFilme ? item.title : item.name;
+        return normalizeTitle(title).includes(candidateNormalized);
+      });
 
-    // FILTRO: resultado DEVE conter o texto procurado (normalizado)
-    const nomeNormalized = normalize(nome);
-    const filteredResults = results.filter(item => {
-      const title = isFilme ? item.title : item.name;
-      const titleNormalized = normalize(title);
-      return titleNormalized.includes(nomeNormalized);
-    });
+      if (filteredResults.length > 0) break;
+    }
 
     if (filteredResults.length === 0) {
       console.log(`[detectCompleteType] Nenhum resultado após filtro por nome: "${nome}"`);
@@ -135,20 +121,6 @@ export async function POST(request) {
     const { tmdbKey } = getKeys();
     console.log(`[imdb-search] Buscando: ${nome} (${ano}) como ${tipoModo}`);
 
-    // Normaliza nome: remove acentos, artigos, lowercase, e pontuação extra
-    function normalize(s) {
-      return (s || '')
-        .toString()
-        .normalize('NFKD')
-        .replace(/[̀-ͯ]/g, '') // remove acentos
-        .toLowerCase()
-        .trim()
-        .replace(/^(a|o|um|uma|the|an)\s+/i, '') // remove artigos do início
-        .replace(/:\s+/g, ' ') // substitui ": " por espaço único
-        .replace(/\s+/g, ' ') // normaliza múltiplos espaços
-        .trim();
-    }
-
     // PASSO 1: Busca no TMDb PRIMEIRO para obter o nome correto e completo
     console.log(`[imdb-search] Passo 1: Buscando resultados no TMDb...`);
     const foundItems = await detectCompleteType(nome, ano, tipoModo, tmdbKey);
@@ -162,12 +134,14 @@ export async function POST(request) {
     console.log(`[imdb-search] Passo 2: Procurando na planilha...`);
     const sheet = await loadFromDropbox();
     const anoInt = parseInt(ano, 10);
+    const nomeDigitado = nome.trim();
+    const nomeDigitadoNorm = normalizeTitle(nomeDigitado);
     const matchesInClub = [];
     const matchesNotInClub = [];
 
     for (const found of foundItems) {
       const nomeCorreto = found.nome;
-      const nomeCorretoNorm = normalize(nomeCorreto);
+      const nomeCorretoNorm = normalizeTitle(nomeCorreto);
 
       console.log(`[imdb-search] Verificando: "${nomeCorreto}" (normalizado="${nomeCorretoNorm}")`);
 
@@ -177,8 +151,8 @@ export async function POST(request) {
       if (tipoModo === 'filme') {
         // Procura por F ou FD (filmes)
         existsInClub = sheet.rows.find(r => {
-          const rNomeNorm = normalize(r.nome);
-          const match = rNomeNorm === nomeCorretoNorm && String(r.ano) === String(anoInt) && ['F', 'FD'].includes(r.tipo.trim().toUpperCase());
+          const rNomeNorm = normalizeTitle(r.nome);
+          const match = (rNomeNorm === nomeCorretoNorm || rNomeNorm === nomeDigitadoNorm) && String(r.ano) === String(anoInt) && ['F', 'FD'].includes(r.tipo.trim().toUpperCase());
           if (match) {
             console.log(`[DEBUG] ✅ ENCONTRADO NA PLANILHA: "${r.nome}" (normalizado="${rNomeNorm}")`);
           }
@@ -187,8 +161,8 @@ export async function POST(request) {
       } else {
         // Procura por S, MS, SD, MSD (séries)
         existsInClub = sheet.rows.find(r => {
-          const rNomeNorm = normalize(r.nome);
-          const match = rNomeNorm === nomeCorretoNorm && String(r.ano) === String(anoInt) && ['S', 'MS', 'SD', 'MSD'].includes(r.tipo.trim().toUpperCase());
+          const rNomeNorm = normalizeTitle(r.nome);
+          const match = (rNomeNorm === nomeCorretoNorm || rNomeNorm === nomeDigitadoNorm) && String(r.ano) === String(anoInt) && ['S', 'MS', 'SD', 'MSD'].includes(r.tipo.trim().toUpperCase());
           if (match) {
             console.log(`[DEBUG] ✅ ENCONTRADO NA PLANILHA: "${r.nome}" (normalizado="${rNomeNorm}")`);
           }
@@ -213,7 +187,7 @@ export async function POST(request) {
         console.log(`[imdb-search] "${nomeCorreto}" não encontrado na planilha.`);
         matchesNotInClub.push({
           imdbId: found.imdbId,
-          nome: found.nome,
+          nome: nomeDigitado,
           ano: found.ano,
           tipo: found.tipo, // Tipo detectado automaticamente
           imdbRating: found.imdbRating || null,
